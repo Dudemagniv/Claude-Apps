@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shift pay — Shabbat &amp; chagim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#161936;
+  --night-deep:#0D0F26;
+  --line:rgba(176,183,232,.16);
+  --wax:#F4EFE6;
+  --muted:#9299CC;
+  --flame:#F6AC3E;
+  --ember:#DF6A2A;
+  --indigo:#5A63C8;
+  --indigo-soft:#3A4192;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(246,172,62,.13), transparent 60%),
+    linear-gradient(180deg, var(--night) 0%, var(--night-deep) 100%);
+  background-attachment: fixed;
+  color:var(--wax);
+  font-family:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size:16px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  padding:22px 16px 56px;
+}
+.app{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.view{display:flex;flex-direction:column;gap:14px}
+.view[hidden]{display:none}
+
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:2px 4px 0}
+.masthead h1{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.01em;margin:0}
+.masthead .eyebrow{margin:0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- tabs ---------- */
+.tabs{
+  display:flex;gap:4px;padding:4px;border-radius:12px;
+  background:rgba(13,15,38,.5);border:1px solid var(--line);
+}
+.tab{
+  flex:1;border:0;background:none;cursor:pointer;color:var(--muted);
+  padding:11px 8px;border-radius:9px;
+  font-family:"IBM Plex Sans",sans-serif;font-size:.92rem;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.tab[aria-selected="true"]{
+  color:var(--wax);
+  background:linear-gradient(180deg, rgba(246,172,62,.17), rgba(223,106,42,.09));
+  box-shadow:inset 0 0 0 1px rgba(246,172,62,.30);
+}
+.tab .count{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;
+  padding:1px 7px;border-radius:20px;background:rgba(255,255,255,.08);color:var(--muted);
+}
+.tab[aria-selected="true"] .count{background:rgba(246,172,62,.2);color:var(--flame)}
+
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:18px 16px;
+}
+.card__head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+}
+
+/* ---------- result ---------- */
+.result .total{
+  font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;font-weight:800;
+  font-size:clamp(2.9rem,13vw,4rem);line-height:1;letter-spacing:-.035em;
+  display:flex;align-items:baseline;gap:.12em;font-variant-numeric:tabular-nums;
+}
+.result .total .sym{font-size:.42em;font-weight:700;color:var(--flame);letter-spacing:0}
+.result .sub{margin:10px 0 0;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.78rem;color:var(--muted)}
+.result .sub .hot{color:var(--flame)}
+
+/* ---------- the band ---------- */
+.band{margin-top:18px}
+.band__track{
+  position:relative;height:54px;border-radius:6px;overflow:hidden;
+  background:linear-gradient(180deg,var(--indigo) 0%, var(--indigo-soft) 100%);
+  border:1px solid rgba(255,255,255,.08);
+}
+.band__track.is-empty{background:rgba(255,255,255,.05)}
+.band__rest{
+  position:absolute;top:0;bottom:0;
+  background:linear-gradient(180deg,var(--flame) 0%, var(--ember) 100%);
+  transition:left .25s ease,width .25s ease;
+}
+.band__edge{position:absolute;top:0;bottom:0;width:1px;background:rgba(13,15,38,.75)}
+.band__tick{position:absolute;top:0;height:7px;width:1px;background:rgba(13,15,38,.35)}
+.band__scale{display:flex;justify-content:space-between;margin-top:7px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;color:var(--muted)}
+.legend{display:flex;gap:16px;margin-top:12px;font-size:.72rem;color:var(--muted);font-family:"IBM Plex Mono",ui-monospace,monospace}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:block}
+.k-reg{background:var(--indigo)}
+.k-rest{background:linear-gradient(180deg,var(--flame),var(--ember))}
+
+/* ---------- inputs ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field.wide{grid-column:1 / -1}
+.field label{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{
+  width:100%;background:rgba(13,15,38,.55);border:1px solid var(--line);border-radius:9px;
+  color:var(--wax);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:1rem;
+  padding:11px 12px;appearance:none;
+}
+.field select{font-family:"IBM Plex Sans",sans-serif}
+.field .hint{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.68rem;color:var(--flame);min-height:1em}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--flame);outline-offset:2px}
+
+/* ---------- buttons ---------- */
+.btn{
+  border:0;border-radius:9px;padding:13px 16px;cursor:pointer;
+  font-family:"IBM Plex Sans",sans-serif;font-size:.95rem;font-weight:600;
+  background:linear-gradient(180deg,var(--flame),var(--ember));color:#2A1606;
+}
+.btn[disabled]{opacity:.4;cursor:default}
+.btn--wide{width:100%;margin-top:14px}
+.btn--ghost{
+  background:none;border:1px solid var(--line);color:var(--muted);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.66rem;
+  letter-spacing:.13em;text-transform:uppercase;padding:8px 11px;font-weight:400;
+}
+.btn--ghost:hover{color:var(--wax)}
+.mini{
+  appearance:none;background:rgba(90,99,200,.18);border:1px solid rgba(90,99,200,.4);border-radius:7px;
+  color:var(--wax);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.66rem;
+  letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;cursor:pointer;
+}
+.mini:hover{border-color:var(--flame);color:var(--flame)}
+
+/* ---------- breakdown ---------- */
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.row:first-child{padding-top:0}
+.row:last-child{border-bottom:0}
+.row__label{display:flex;align-items:center;gap:9px;font-size:.92rem}
+.row__label i{width:9px;height:9px;border-radius:2px;display:block;flex:none}
+.row__meta{display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;color:var(--muted);margin-top:2px}
+.row__val{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.95rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row.is-total{border-top:1px solid var(--line);border-bottom:0;padding-top:12px;margin-top:4px}
+.row.is-total .row__label{font-weight:600}
+.row.is-total .row__val{color:var(--flame);font-weight:500}
+.window{
+  margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.73rem;color:var(--muted);line-height:1.7;
+}
+.window b{color:var(--wax);font-weight:500}
+.window .name{color:var(--flame)}
+
+/* ---------- shift list ---------- */
+.stats{display:flex;gap:20px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.35rem;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+.month{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  padding:0 0 10px;margin-bottom:2px;
+}
+.month__name{font-family:"Bricolage Grotesque",sans-serif;font-size:1rem;font-weight:700;letter-spacing:-.01em}
+.month__meta{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;color:var(--muted)}
+.month__pay{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.9rem;color:var(--flame);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.entry{display:flex;align-items:center;gap:13px;padding:12px 0;border-top:1px solid var(--line)}
+.daychip{
+  flex:none;width:56px;padding:7px 4px 6px;border-radius:10px;text-align:center;
+  background:rgba(90,99,200,.16);border:1px solid rgba(90,99,200,.32);
+}
+.daychip b{
+  display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
+  font-size:1.7rem;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+}
+.daychip span{
+  display:block;margin-top:3px;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+}
+.daychip.is-rest{background:rgba(246,172,62,.14);border-color:rgba(246,172,62,.36)}
+.daychip.is-rest b{color:var(--flame)}
+.daychip.is-rest span{color:rgba(246,172,62,.75)}
+
+.entry__main{flex:1;min-width:0}
+.entry__top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.entry__when{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.95rem;font-variant-numeric:tabular-nums}
+.entry__pay{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.98rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.entry__meta{font-size:.76rem;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:0 8px}
+.entry__meta .hot{color:var(--flame)}
+.tag{
+  padding:2px 7px;border-radius:5px;background:rgba(246,172,62,.15);color:var(--flame);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.64rem;letter-spacing:.04em;
+}
+.del{
+  background:none;border:0;color:var(--muted);cursor:pointer;flex:none;align-self:stretch;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;padding:0 2px 0 10px;
+}
+.del[data-armed="1"]{color:var(--ember)}
+.empty{font-size:.9rem;color:var(--muted);line-height:1.65;margin:0}
+.empty b{color:var(--wax);font-weight:600}
+
+/* ---------- settings ---------- */
+details.card{padding:0}
+details.card summary{
+  list-style:none;cursor:pointer;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);
+}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::after{content:"+";font-size:1rem;line-height:1}
+details.card[open] summary::after{content:"–"}
+.settings__body{padding:2px 16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.foot{margin:2px 4px 0;font-size:.72rem;line-height:1.6;color:var(--muted)}
+@media (max-width:380px){ .grid,.settings__body{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<main class="app">
+
+  <header class="masthead">
+    <h1>Shift pay</h1>
+    <p class="eyebrow">Shabbat &amp; chagim at <span id="multLabel">150</span>%</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tabCalc" role="tab" aria-selected="true" aria-controls="viewCalc">Calculate</button>
+    <button class="tab" id="tabLog" role="tab" aria-selected="false" aria-controls="viewLog">
+      My shifts <span class="count" id="tabCount">0</span>
+    </button>
+  </div>
+
+  <!-- ============ CALCULATE ============ -->
+  <div class="view" id="viewCalc" role="tabpanel" aria-labelledby="tabCalc">
+
+    <section class="card result">
+      <div class="total" aria-live="polite"><span class="sym" id="sym">₪</span><span id="total">0.00</span></div>
+      <p class="sub" id="sub">Enter a shift and your rate.</p>
+      <div class="band">
+        <div class="band__track is-empty" id="track"></div>
+        <div class="band__scale"><span id="scaleStart">—</span><span id="scaleEnd">—</span></div>
+        <div class="legend">
+          <span><i class="k-reg"></i>regular</span>
+          <span><i class="k-rest"></i>shabbat / chag</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="grid">
+        <div class="field wide">
+          <label for="date">Shift date</label>
+          <input type="date" id="date">
+        </div>
+        <div class="field">
+          <label for="start">Started</label>
+          <input type="time" id="start" value="12:00">
+        </div>
+        <div class="field">
+          <label for="end">Ended</label>
+          <input type="time" id="end" value="21:00">
+          <span class="hint" id="nextDay"></span>
+        </div>
+        <div class="field wide">
+          <label for="rate">Hourly rate</label>
+          <input type="number" id="rate" inputmode="decimal" min="0" step="0.01" value="60" placeholder="60.00">
+        </div>
+      </div>
+      <button class="btn btn--wide" id="save">Save this shift</button>
+    </section>
+
+    <section class="card">
+      <div class="rows" id="rows"></div>
+      <div class="window" id="windowInfo"></div>
+    </section>
+
+    <details class="card">
+      <summary>Shabbat, chag &amp; pay settings</summary>
+      <div class="settings__body">
+        <div class="field wide">
+          <label for="city">Location</label>
+          <select id="city"></select>
+        </div>
+        <div class="field" id="latField" hidden>
+          <label for="lat">Latitude</label>
+          <input type="number" id="lat" step="0.0001" value="32.0853">
+        </div>
+        <div class="field" id="lonField" hidden>
+          <label for="lon">Longitude</label>
+          <input type="number" id="lon" step="0.0001" value="34.7818">
+        </div>
+        <div class="field wide">
+          <label for="tz">Time zone</label>
+          <select id="tz"></select>
+        </div>
+        <div class="field wide">
+          <label for="rite">Chag calendar</label>
+          <select id="rite">
+            <option value="il">Israel — one day of yom tov</option>
+            <option value="chul">Outside Israel — two days</option>
+            <option value="off">Shabbat only, ignore chagim</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="candle">Starts (min before sunset)</label>
+          <input type="number" id="candle" min="0" max="120" step="1" value="18">
+        </div>
+        <div class="field">
+          <label for="endMethod">Ends at</label>
+          <select id="endMethod">
+            <option value="40">40 min after sunset</option>
+            <option value="72">72 min after sunset</option>
+            <option value="deg">Stars out (8.5° below)</option>
+            <option value="custom">Custom minutes</option>
+          </select>
+        </div>
+        <div class="field" id="customEndField" hidden>
+          <label for="endMinutes">Min after sunset</label>
+          <input type="number" id="endMinutes" min="0" max="180" step="1" value="50">
+        </div>
+        <div class="field">
+          <label for="mult">Premium rate %</label>
+          <input type="number" id="mult" min="100" max="400" step="5" value="150">
+        </div>
+        <div class="field">
+          <label for="currency">Currency</label>
+          <input type="text" id="currency" maxlength="3" value="₪">
+        </div>
+      </div>
+    </details>
+
+    <p class="foot" id="foot">Sunset is calculated for the selected coordinates at sea level, so times can differ by a minute from a published local luach. Chol hamoed is treated as a normal working day. Set “starts” to 0 to run the premium from sunset rather than candle lighting.</p>
+  </div>
+
+  <!-- ============ SHIFTS ============ -->
+  <div class="view" id="viewLog" role="tabpanel" aria-labelledby="tabLog" hidden>
+    <section class="card" id="statsCard" hidden>
+      <div class="card__head">
+        <span>All time</span>
+        <button type="button" id="order" class="mini" value="asc">Oldest first ↑</button>
+      </div>
+      <div class="stats" id="stats"></div>
+    </section>
+    <div id="log"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px" id="logTools" hidden>
+      <button class="btn btn--ghost" id="copyCsv" type="button">Copy as CSV</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ * Locations
+ * ------------------------------------------------------------------ */
+const CITIES = [
+  {id:"jerusalem",  name:"Jerusalem",      lat:31.7683, lon:35.2137, candle:40, tz:"Asia/Jerusalem"},
+  {id:"telaviv",    name:"Tel Aviv–Yafo",  lat:32.0853, lon:34.7818, candle:18, tz:"Asia/Jerusalem"},
+  {id:"haifa",      name:"Haifa",          lat:32.7940, lon:34.9896, candle:30, tz:"Asia/Jerusalem"},
+  {id:"rishon",     name:"Rishon LeZion",  lat:31.9730, lon:34.7925, candle:18, tz:"Asia/Jerusalem"},
+  {id:"petahtikva", name:"Petah Tikva",    lat:32.0870, lon:34.8878, candle:18, tz:"Asia/Jerusalem"},
+  {id:"netanya",    name:"Netanya",        lat:32.3215, lon:34.8532, candle:18, tz:"Asia/Jerusalem"},
+  {id:"ashdod",     name:"Ashdod",         lat:31.8040, lon:34.6550, candle:18, tz:"Asia/Jerusalem"},
+  {id:"beersheva",  name:"Be'er Sheva",    lat:31.2530, lon:34.7915, candle:18, tz:"Asia/Jerusalem"},
+  {id:"tiberias",   name:"Tiberias",       lat:32.7959, lon:35.5300, candle:18, tz:"Asia/Jerusalem"},
+  {id:"eilat",      name:"Eilat",          lat:29.5577, lon:34.9519, candle:18, tz:"Asia/Jerusalem"}
+];
+
+/* ------------------------------------------------------------------ *
+ * Wall clock <-> epoch, time-zone aware
+ * ------------------------------------------------------------------ */
+function tzOffsetMs(ms, tz){
+  const p = new Intl.DateTimeFormat("en-US",{
+    timeZone:tz, hour12:false, year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit"
+  }).formatToParts(new Date(ms)).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return Date.UTC(+p.year, +p.month-1, +p.day, (+p.hour)%24, +p.minute, +p.second) - ms;
+}
+function zonedToEpoch(y,m,d,hh,mm,tz){
+  const guess = Date.UTC(y, m-1, d, hh, mm, 0);
+  const ts = guess - tzOffsetMs(guess, tz);
+  return guess - tzOffsetMs(ts, tz);
+}
+function civilDate(ms, tz){
+  const p = new Intl.DateTimeFormat("en-CA",{timeZone:tz, year:"numeric", month:"2-digit", day:"2-digit"})
+    .format(new Date(ms)).split("-");
+  return [+p[0], +p[1], +p[2]];
+}
+function addDays(y,m,d,n){
+  const t = new Date(Date.UTC(y, m-1, d + n));
+  return [t.getUTCFullYear(), t.getUTCMonth()+1, t.getUTCDate()];
+}
+const weekdayOfCivil = (y,m,d) => new Date(Date.UTC(y, m-1, d)).getUTCDay(); // 6 = Saturday
+const fmtTime = (ms,tz) => new Intl.DateTimeFormat("en-GB",{timeZone:tz,hour12:false,hour:"2-digit",minute:"2-digit"}).format(new Date(ms));
+const fmtDay  = (ms,tz) => new Intl.DateTimeFormat("en-GB",{timeZone:tz,weekday:"short"}).format(new Date(ms));
+
+/* ------------------------------------------------------------------ *
+ * Sunset / nightfall (NOAA solar position)
+ * ------------------------------------------------------------------ */
+const rad = x => x*Math.PI/180, deg = x => x*180/Math.PI;
+function julianDay(y,m,d){
+  if(m <= 2){ y -= 1; m += 12; }
+  const A = Math.floor(y/100), B = 2 - A + Math.floor(A/4);
+  return Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + d + B - 1524.5;
+}
+/* Epoch ms of the evening moment the sun's centre reaches `zenith` degrees
+   from the zenith. 90.833 = sunset, 98.5 = three stars. */
+function eveningEvent(y, m, d, lat, lon, zenith){
+  const jd = julianDay(y, m, d);
+  let minutes = 720, out = null;
+  for(let i=0;i<3;i++){
+    const t  = (jd + minutes/1440 - 2451545)/36525;
+    const L0 = ((280.46646 + t*(36000.76983 + t*0.0003032)) % 360 + 360) % 360;
+    const M  = 357.52911 + t*(35999.05029 - 0.0001537*t);
+    const e  = 0.016708634 - t*(0.000042037 + 0.0000001267*t);
+    const C  = Math.sin(rad(M))*(1.914602 - t*(0.004817 + 0.000014*t))
+             + Math.sin(rad(2*M))*(0.019993 - 0.000101*t)
+             + Math.sin(rad(3*M))*0.000289;
+    const omega  = 125.04 - 1934.136*t;
+    const lambda = L0 + C - 0.00569 - 0.00478*Math.sin(rad(omega));
+    const sec    = 21.448 - t*(46.815 + t*(0.00059 - t*0.001813));
+    const eps    = (23 + (26 + sec/60)/60) + 0.00256*Math.cos(rad(omega));
+    const decl   = deg(Math.asin(Math.sin(rad(eps))*Math.sin(rad(lambda))));
+    const vy     = Math.tan(rad(eps/2))**2;
+    const eqTime = 4*deg(
+        vy*Math.sin(2*rad(L0)) - 2*e*Math.sin(rad(M))
+      + 4*e*vy*Math.sin(rad(M))*Math.cos(2*rad(L0))
+      - 0.5*vy*vy*Math.sin(4*rad(L0)) - 1.25*e*e*Math.sin(2*rad(M))
+    );
+    const cosH = Math.cos(rad(zenith))/(Math.cos(rad(lat))*Math.cos(rad(decl)))
+               - Math.tan(rad(lat))*Math.tan(rad(decl));
+    if(cosH > 1 || cosH < -1) return null;
+    minutes = 720 - 4*lon - eqTime + 4*deg(Math.acos(cosH));
+    out = minutes;
+  }
+  return Date.UTC(y, m-1, d) + out*60000;
+}
+
+/* ------------------------------------------------------------------ *
+ * Chagim, via the browser's Hebrew calendar
+ * ------------------------------------------------------------------ */
+const YOM_TOV = {
+  "Tishri|1":"Rosh Hashana", "Tishri|2":"Rosh Hashana", "Tishri|10":"Yom Kippur",
+  "Tishri|15":"Sukkot", "Tishri|22":"Shmini Atzeret",
+  "Nisan|15":"Pesach", "Nisan|21":"Shvi'i shel Pesach", "Sivan|6":"Shavuot"
+};
+const YOM_TOV_CHUL = {
+  "Tishri|16":"Sukkot II", "Tishri|23":"Simchat Torah",
+  "Nisan|16":"Pesach II", "Nisan|22":"Acharon shel Pesach", "Sivan|7":"Shavuot II"
+};
+let hebrewOk = true, hebFmt = null;
+try{
+  hebFmt = new Intl.DateTimeFormat("en-u-ca-hebrew",{timeZone:"UTC",day:"numeric",month:"long",year:"numeric"});
+  const probe = hebFmt.formatToParts(new Date(Date.UTC(2026,8,21,12))).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  if(probe.month !== "Tishri" || probe.day !== "10") hebrewOk = false;
+}catch(e){ hebrewOk = false; }
+
+function hebKey(y,m,d){
+  const p = hebFmt.formatToParts(new Date(Date.UTC(y, m-1, d, 12))).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return p.month + "|" + p.day;
+}
+/* Every reason this civil date is a rest day — a chag can land on Shabbat. */
+function restDayNames(y,m,d,rite){
+  const names = [];
+  if(weekdayOfCivil(y,m,d) === 6) names.push("Shabbat");
+  if(rite !== "off" && hebrewOk){
+    const k = hebKey(y,m,d);
+    const chag = YOM_TOV[k] || (rite === "chul" ? YOM_TOV_CHUL[k] : null);
+    if(chag) names.push(chag);
+  }
+  return names;
+}
+
+/* ------------------------------------------------------------------ *
+ * Premium windows: runs of consecutive rest days, evening to nightfall
+ * ------------------------------------------------------------------ */
+function restWindows(fromMs, toMs, cfg){
+  const [Y,M,D] = civilDate(fromMs, cfg.tz);
+  const days = [];
+  for(let k = -3; k <= 4; k++){
+    const [y,m,d] = addDays(Y, M, D, k);
+    days.push({y, m, d, names: restDayNames(y, m, d, cfg.rite)});
+  }
+  const out = [];
+  let i = 0;
+  while(i < days.length){
+    if(!days[i].names.length){ i++; continue; }
+    let j = i;
+    while(j + 1 < days.length && days[j+1].names.length) j++;
+    const first = days[i], last = days[j];
+    const [py,pm,pd] = addDays(first.y, first.m, first.d, -1);
+    const sunsetBefore = eveningEvent(py, pm, pd, cfg.lat, cfg.lon, 90.833);
+    const sunsetLast   = eveningEvent(last.y, last.m, last.d, cfg.lat, cfg.lon, 90.833);
+    if(sunsetBefore !== null && sunsetLast !== null){
+      const start = sunsetBefore - cfg.candle*60000;
+      const end = cfg.endMode === "deg"
+        ? (eveningEvent(last.y, last.m, last.d, cfg.lat, cfg.lon, 98.5) ?? sunsetLast + 40*60000)
+        : sunsetLast + cfg.endMinutes*60000;
+      if(end > fromMs && start < toMs){
+        const names = [];
+        for(let k = i; k <= j; k++){
+          days[k].names.forEach(n => { if(names.indexOf(n) === -1) names.push(n); });
+        }
+        out.push({start, end, sunsetBefore, sunsetLast, label:names.join(" + ")});
+      }
+    }
+    i = j + 1;
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ *
+ * Storage: Claude's artifact store, else the browser, else memory
+ * ------------------------------------------------------------------ */
+const Store = (function(){
+  const mem = {};
+  const cloud = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
+  let local = false;
+  if(!cloud){
+    try{ window.localStorage.setItem("__probe","1"); window.localStorage.removeItem("__probe"); local = true; }
+    catch(e){ local = false; }
+  }
+  return {
+    mode: cloud ? "your Claude account" : local ? "this browser" : "this session only",
+    async get(key){
+      if(cloud){ try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }catch(e){ return null; } }
+      if(local){ try{ const v = window.localStorage.getItem(key); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+      return key in mem ? mem[key] : null;
+    },
+    async set(key, val){
+      const s = JSON.stringify(val);
+      if(cloud){ try{ await window.storage.set(key, s, false); return true; }catch(e){ return false; } }
+      if(local){ try{ window.localStorage.setItem(key, s); return true; }catch(e){ return false; } }
+      mem[key] = val; return true;
+    }
+  };
+})();
+const KEY_SHIFTS = "shiftpay:shifts";
+const KEY_PREFS  = "shiftpay:prefs";
+
+/* ------------------------------------------------------------------ *
+ * Elements
+ * ------------------------------------------------------------------ */
+const $ = id => document.getElementById(id);
+const el = {
+  date:$("date"), start:$("start"), end:$("end"), rate:$("rate"),
+  city:$("city"), lat:$("lat"), lon:$("lon"), latField:$("latField"), lonField:$("lonField"),
+  tz:$("tz"), rite:$("rite"), candle:$("candle"), endMethod:$("endMethod"),
+  endMinutes:$("endMinutes"), customEndField:$("customEndField"),
+  mult:$("mult"), currency:$("currency"),
+  total:$("total"), sym:$("sym"), sub:$("sub"), rows:$("rows"),
+  track:$("track"), scaleStart:$("scaleStart"), scaleEnd:$("scaleEnd"),
+  windowInfo:$("windowInfo"), nextDay:$("nextDay"), multLabel:$("multLabel"),
+  save:$("save"), log:$("log"), stats:$("stats"), statsCard:$("statsCard"),
+  logTools:$("logTools"), copyCsv:$("copyCsv"), foot:$("foot"), order:$("order"),
+  tabCalc:$("tabCalc"), tabLog:$("tabLog"), tabCount:$("tabCount"),
+  viewCalc:$("viewCalc"), viewLog:$("viewLog")
+};
+
+CITIES.forEach(c => el.city.add(new Option(c.name, c.id)));
+el.city.add(new Option("Custom coordinates…", "custom"));
+el.city.value = "telaviv";
+
+(function fillTz(){
+  let zones;
+  try{ zones = Intl.supportedValuesOf("timeZone"); }catch(e){ zones = null; }
+  if(!zones || !zones.length) zones = ["Asia/Jerusalem","Europe/London","America/New_York","UTC"];
+  const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if(local && zones.indexOf(local) === -1) zones.unshift(local);
+  zones.forEach(z => el.tz.add(new Option(z, z)));
+  el.tz.value = zones.indexOf("Asia/Jerusalem") >= 0 ? "Asia/Jerusalem" : (local || zones[0]);
+})();
+
+el.date.value = new Intl.DateTimeFormat("en-CA",{timeZone:el.tz.value, year:"numeric", month:"2-digit", day:"2-digit"}).format(new Date());
+if(!hebrewOk){
+  el.rite.value = "off";
+  el.foot.textContent = "This browser can't read the Hebrew calendar, so chagim are off and only Shabbat is counted. " + el.foot.textContent;
+}
+
+/* ------------------------------------------------------------------ *
+ * Formatting helpers
+ * ------------------------------------------------------------------ */
+const money = n => n.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+const hoursOf = ms => ms/3600000;
+function durText(ms){
+  const total = Math.round(ms/60000);
+  return Math.floor(total/60) + "h " + String(total%60).padStart(2,"0") + "m";
+}
+const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ------------------------------------------------------------------ *
+ * Reading the form
+ * ------------------------------------------------------------------ */
+function readConfig(){
+  const city = CITIES.find(c => c.id === el.city.value);
+  const mode = el.endMethod.value;
+  return {
+    lat: city ? city.lat : parseFloat(el.lat.value) || 0,
+    lon: city ? city.lon : parseFloat(el.lon.value) || 0,
+    tz: el.tz.value,
+    rite: el.rite.value,
+    candle: Math.max(0, parseFloat(el.candle.value) || 0),
+    endMode: mode === "deg" ? "deg" : "min",
+    endMinutes: mode === "deg" ? 40 : mode === "custom" ? (parseFloat(el.endMinutes.value) || 0) : parseFloat(mode)
+  };
+}
+
+/* Everything about the shift currently in the form, or null if incomplete. */
+function currentShift(){
+  if(!el.date.value || !el.start.value || !el.end.value) return null;
+  const cfg = readConfig();
+  const mult = (parseFloat(el.mult.value) || 150) / 100;
+  const rate = parseFloat(el.rate.value);
+  const hasRate = !isNaN(rate) && rate > 0;
+
+  const [Y,M,D] = el.date.value.split("-").map(Number);
+  const [sh,sm] = el.start.value.split(":").map(Number);
+  const [eh,em] = el.end.value.split(":").map(Number);
+
+  const startMs = zonedToEpoch(Y, M, D, sh, sm, cfg.tz);
+  let endMs = zonedToEpoch(Y, M, D, eh, em, cfg.tz);
+  let rolled = false;
+  if(endMs <= startMs){
+    const [ny,nm,nd] = addDays(Y, M, D, 1);
+    endMs = zonedToEpoch(ny, nm, nd, eh, em, cfg.tz);
+    rolled = true;
+  }
+
+  const windows = restWindows(startMs, endMs, cfg);
+  const overlaps = [];
+  const labels = [];
+  let restMs = 0;
+  windows.forEach(w => {
+    const a = Math.max(w.start, startMs), b = Math.min(w.end, endMs);
+    if(b > a){
+      overlaps.push([a,b]);
+      restMs += b - a;
+      w.label.split(" + ").forEach(n => { if(labels.indexOf(n) === -1) labels.push(n); });
+    }
+  });
+  const dur = endMs - startMs;
+  const regMs = dur - restMs;
+  const eff = hasRate ? rate : 0;
+
+  return {
+    cfg, mult, rate, hasRate, rolled, startMs, endMs, dur, regMs, restMs,
+    windows, overlaps, label: labels.join(" + "),
+    regPay: hoursOf(regMs)*eff,
+    restPay: hoursOf(restMs)*eff*mult,
+    get total(){ return this.regPay + this.restPay; }
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Render the calculator
+ * ------------------------------------------------------------------ */
+function render(){
+  const cur = el.currency.value || "";
+  el.sym.textContent = cur;
+  el.multLabel.textContent = Math.round(parseFloat(el.mult.value) || 150);
+
+  const s = currentShift();
+  if(!s){
+    el.sub.textContent = "Fill in the date and both times.";
+    el.rows.innerHTML = "";
+    el.windowInfo.textContent = "";
+    el.total.textContent = "0.00";
+    el.track.className = "band__track is-empty";
+    el.track.innerHTML = "";
+    el.save.disabled = true;
+    return;
+  }
+  el.save.disabled = false;
+  el.nextDay.textContent = s.rolled ? "ends next day" : "";
+  el.total.textContent = money(s.total);
+  el.sub.innerHTML = s.hasRate
+    ? durText(s.dur) + " worked" + (s.restMs > 0
+        ? ' · <span class="hot">' + durText(s.restMs) + " at " + Math.round(s.mult*100) + "%</span>"
+        : " · all regular hours")
+    : durText(s.dur) + " worked · add your hourly rate";
+
+  el.track.className = "band__track";
+  let html = "";
+  s.overlaps.forEach(([a,b]) => {
+    const left = (a - s.startMs)/s.dur*100, width = (b - a)/s.dur*100;
+    html += '<div class="band__rest" style="left:' + left + '%;width:' + width + '%"></div>';
+    if(a > s.startMs) html += '<div class="band__edge" style="left:' + left + '%"></div>';
+    if(b < s.endMs)   html += '<div class="band__edge" style="left:' + (left+width) + '%"></div>';
+  });
+  const step = s.dur > 10*3600000 ? 2 : 1;
+  const off = tzOffsetMs(s.startMs, s.cfg.tz);
+  for(let t = Math.ceil((s.startMs + off)/3600000)*3600000 - off; t < s.endMs; t += step*3600000){
+    html += '<div class="band__tick" style="left:' + ((t - s.startMs)/s.dur*100) + '%"></div>';
+  }
+  el.track.innerHTML = html;
+  el.scaleStart.textContent = fmtDay(s.startMs, s.cfg.tz) + " " + fmtTime(s.startMs, s.cfg.tz);
+  el.scaleEnd.textContent   = fmtDay(s.endMs, s.cfg.tz) + " " + fmtTime(s.endMs, s.cfg.tz);
+
+  const eff = s.hasRate ? s.rate : 0;
+  const rows = [payRow("k-reg", "Regular hours", hoursOf(s.regMs), eff, s.regPay, cur)];
+  if(s.restMs > 0) rows.push(payRow("k-rest", s.label + " hours", hoursOf(s.restMs), eff*s.mult, s.restPay, cur));
+  rows.push('<div class="row is-total"><div class="row__label">Total for this shift</div><div class="row__val">' + cur + money(s.total) + "</div></div>");
+  el.rows.innerHTML = rows.join("");
+
+  if(s.windows.length){
+    el.windowInfo.innerHTML = s.windows.map(w =>
+      '<span class="name">' + escapeHtml(w.label) + "</span> <b>" + fmtDay(w.start,s.cfg.tz) + " " + fmtTime(w.start,s.cfg.tz) +
+      "</b> → <b>" + fmtDay(w.end,s.cfg.tz) + " " + fmtTime(w.end,s.cfg.tz) + "</b><br>sunset " +
+      fmtTime(w.sunsetBefore,s.cfg.tz) + " / " + fmtTime(w.sunsetLast,s.cfg.tz) + " · minus " + s.cfg.candle +
+      " min · " + (s.cfg.endMode === "deg" ? "stars out 8.5°" : "plus " + s.cfg.endMinutes + " min")
+    ).join("<br><br>");
+  } else {
+    el.windowInfo.textContent = "No Shabbat or chag falls inside this shift.";
+  }
+}
+function payRow(kind, label, hrs, effRate, pay, cur){
+  return '<div class="row"><div class="row__label"><i class="' + kind + '"></i><span>' + escapeHtml(label) +
+    '<span class="row__meta">' + hrs.toFixed(2) + " h × " + cur + effRate.toFixed(2) + "</span></span></div>" +
+    '<div class="row__val">' + cur + money(pay) + "</div></div>";
+}
+
+/* ------------------------------------------------------------------ *
+ * Tabs
+ * ------------------------------------------------------------------ */
+function showTab(which){
+  const log = which === "log";
+  el.tabLog.setAttribute("aria-selected", String(log));
+  el.tabCalc.setAttribute("aria-selected", String(!log));
+  el.viewLog.hidden = !log;
+  el.viewCalc.hidden = log;
+  window.scrollTo({top:0, behavior:"instant"});
+}
+el.tabCalc.addEventListener("click", () => showTab("calc"));
+el.tabLog.addEventListener("click", () => showTab("log"));
+
+/* ------------------------------------------------------------------ *
+ * The shift list
+ * ------------------------------------------------------------------ */
+let shifts = [];
+
+/* Shifts are always displayed by the date they were worked, never by when
+   they were entered. Direction follows the Newest/Oldest control. */
+function sortShifts(){
+  const dir = el.order.value === "asc" ? 1 : -1;
+  shifts.sort((a,b) => (Number(a.startMs) - Number(b.startMs)) * dir);
+}
+
+async function saveShift(){
+  const s = currentShift();
+  if(!s) return;
+  shifts.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    date: el.date.value,
+    startMs: s.startMs, endMs: s.endMs,
+    tz: s.cfg.tz,
+    rate: s.hasRate ? s.rate : 0,
+    mult: s.mult,
+    currency: el.currency.value || "",
+    hours: hoursOf(s.dur),
+    restHours: hoursOf(s.restMs),
+    label: s.label,
+    pay: s.total
+  });
+  sortShifts();
+  await Store.set(KEY_SHIFTS, shifts);
+  renderLog();
+  el.save.textContent = "Saved";
+  el.save.disabled = true;
+  setTimeout(() => { el.save.textContent = "Save this shift"; el.save.disabled = false; }, 1500);
+}
+
+async function deleteShift(id){
+  shifts = shifts.filter(s => s.id !== id);
+  await Store.set(KEY_SHIFTS, shifts);
+  renderLog();
+}
+
+function renderLog(){
+  sortShifts();
+  el.tabCount.textContent = String(shifts.length);
+
+  if(!shifts.length){
+    el.statsCard.hidden = true;
+    el.logTools.hidden = true;
+    el.log.innerHTML = '<section class="card"><p class="empty"><b>No shifts saved yet.</b><br>' +
+      "Work out a shift on the Calculate tab and press Save this shift. Everything you save is kept in " +
+      Store.mode + ".</p></section>";
+    return;
+  }
+
+  const cur = shifts[0].currency || "";
+  const tot = shifts.reduce((a,s) => ({h:a.h + s.hours, r:a.r + s.restHours, p:a.p + s.pay}), {h:0,r:0,p:0});
+  el.statsCard.hidden = false;
+  el.logTools.hidden = false;
+  el.stats.innerHTML =
+    stat(String(shifts.length), shifts.length === 1 ? "shift" : "shifts") +
+    stat(tot.h.toFixed(1) + "h", "worked") +
+    stat(tot.r.toFixed(1) + "h", "premium") +
+    stat(cur + money(tot.p), "earned");
+
+  const groups = new Map();
+  shifts.forEach(s => {
+    const key = new Intl.DateTimeFormat("en-GB",{timeZone:s.tz, month:"long", year:"numeric"}).format(new Date(s.startMs));
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(s);
+  });
+
+  let html = "";
+  groups.forEach((list, name) => {
+    const sum = list.reduce((a,s) => ({h:a.h + s.hours, p:a.p + s.pay}), {h:0,p:0});
+    html += '<section class="card"><div class="month">' +
+      '<div><div class="month__name">' + name + "</div>" +
+      '<div class="month__meta">' + list.length + (list.length === 1 ? " shift · " : " shifts · ") + sum.h.toFixed(1) + "h</div></div>" +
+      '<div class="month__pay">' + (list[0].currency || "") + money(sum.p) + "</div></div>";
+
+    list.forEach(s => {
+      const dayNum = new Intl.DateTimeFormat("en-GB",{timeZone:s.tz, day:"numeric"}).format(new Date(s.startMs));
+      const dayName = new Intl.DateTimeFormat("en-GB",{timeZone:s.tz, weekday:"short"}).format(new Date(s.startMs));
+      const rest = s.restHours > 0;
+      html += '<div class="entry">' +
+        '<div class="daychip' + (rest ? " is-rest" : "") + '"><b>' + dayNum + "</b><span>" + dayName + "</span></div>" +
+        '<div class="entry__main">' +
+          '<div class="entry__top">' +
+            '<span class="entry__when">' + fmtTime(s.startMs, s.tz) + " → " + fmtTime(s.endMs, s.tz) + "</span>" +
+            '<span class="entry__pay">' + (s.currency||"") + money(s.pay) + "</span>" +
+          "</div>" +
+          '<div class="entry__meta"><span>' + durText(s.hours*3600000) + " · " + (s.currency||"") + s.rate.toFixed(2) + "/h</span>" +
+            (rest ? '<span class="tag">' + escapeHtml(s.label) + " " + durText(s.restHours*3600000) + "</span>" : "") +
+          "</div>" +
+        "</div>" +
+        '<button class="del" type="button" data-id="' + s.id + '" aria-label="Delete shift">remove</button></div>';
+    });
+    html += "</section>";
+  });
+  el.log.innerHTML = html;
+}
+const stat = (v,l) => '<div class="stat"><b>' + v + "</b><span>" + l + "</span></div>";
+
+el.log.addEventListener("click", ev => {
+  const btn = ev.target.closest(".del");
+  if(!btn) return;
+  if(btn.dataset.armed === "1"){ deleteShift(btn.dataset.id); return; }
+  el.log.querySelectorAll(".del").forEach(b => { b.dataset.armed = "0"; b.textContent = "remove"; });
+  btn.dataset.armed = "1";
+  btn.textContent = "sure?";
+  setTimeout(() => { if(btn.isConnected){ btn.dataset.armed = "0"; btn.textContent = "remove"; } }, 3000);
+});
+
+el.copyCsv.addEventListener("click", async () => {
+  if(!shifts.length) return;
+  const lines = ["date,start,end,hours,premium hours,rate,multiplier,occasion,pay"];
+  shifts.slice().reverse().forEach(s => {
+    lines.push([
+      s.date, fmtTime(s.startMs,s.tz), fmtTime(s.endMs,s.tz),
+      s.hours.toFixed(2), s.restHours.toFixed(2), s.rate.toFixed(2),
+      s.mult, '"' + (s.label || "") + '"', s.pay.toFixed(2)
+    ].join(","));
+  });
+  const text = lines.join("\n");
+  let ok = false;
+  try{ await navigator.clipboard.writeText(text); ok = true; }
+  catch(e){
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ ok = document.execCommand("copy"); }catch(e2){ ok = false; }
+    ta.remove();
+  }
+  el.copyCsv.textContent = ok ? "Copied" : "Copy failed";
+  setTimeout(() => { el.copyCsv.textContent = "Copy as CSV"; }, 1500);
+});
+
+/* ------------------------------------------------------------------ *
+ * Preferences
+ * ------------------------------------------------------------------ */
+const PREF_IDS = ["city","lat","lon","tz","rite","candle","endMethod","endMinutes","mult","currency","rate","order"];
+async function savePrefs(){
+  const p = {v:2};
+  PREF_IDS.forEach(id => { p[id] = $(id).value; });
+  await Store.set(KEY_PREFS, p);
+}
+let prefTimer = null;
+function savePrefsSoon(){
+  clearTimeout(prefTimer);
+  prefTimer = setTimeout(savePrefs, 700);
+}
+async function loadPrefs(){
+  const p = await Store.get(KEY_PREFS);
+  if(!p) return;
+  if(p.v !== 2) delete p.order;          // older builds defaulted to newest first
+  PREF_IDS.forEach(id => { if(p[id]) $(id).value = p[id]; });
+  labelOrder();
+  if(!hebrewOk) el.rite.value = "off";
+  const custom = !CITIES.find(c => c.id === el.city.value);
+  el.latField.hidden = !custom;
+  el.lonField.hidden = !custom;
+  el.customEndField.hidden = el.endMethod.value !== "custom";
+}
+
+/* ------------------------------------------------------------------ *
+ * Wiring
+ * ------------------------------------------------------------------ */
+el.city.addEventListener("change", () => {
+  const c = CITIES.find(x => x.id === el.city.value);
+  el.latField.hidden = !!c;
+  el.lonField.hidden = !!c;
+  if(c){ el.candle.value = c.candle; el.tz.value = c.tz; }
+  render(); savePrefsSoon();
+});
+el.endMethod.addEventListener("change", () => {
+  el.customEndField.hidden = el.endMethod.value !== "custom";
+  render(); savePrefsSoon();
+});
+["date","start","end","rate","lat","lon","tz","rite","candle","endMinutes","mult","currency"].forEach(id => {
+  $(id).addEventListener("input", () => { render(); savePrefsSoon(); });
+  $(id).addEventListener("change", () => { render(); savePrefsSoon(); });
+});
+el.save.addEventListener("click", saveShift);
+function labelOrder(){
+  el.order.textContent = el.order.value === "asc" ? "Oldest first ↑" : "Newest first ↓";
+}
+el.order.addEventListener("click", () => {
+  el.order.value = el.order.value === "asc" ? "desc" : "asc";
+  labelOrder();
+  renderLog();
+  savePrefsSoon();
+});
+
+(async function boot(){
+  await loadPrefs();
+  const saved = await Store.get(KEY_SHIFTS);
+  shifts = Array.isArray(saved) ? saved : [];
+  render();
+  renderLog();
+})();
+</script>
+</body>
+</html>
