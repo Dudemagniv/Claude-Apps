@@ -3,8 +3,18 @@ const { getStore } = require("@netlify/blobs");
 // Single-user key/value store backing this app's data (shifts + prefs).
 // No auth: anyone with the site URL's function endpoint could read/write it,
 // which is fine for a personal shift log but worth knowing.
+//
+// Automatic Blobs credential injection doesn't reach this function (a known
+// Netlify quirk on sites created outside the normal onboarding flow), so we
+// fall back to manual config using a token stored in the BLOBS_TOKEN env var.
 exports.handler = async (event) => {
-  const store = getStore("shift-calculator");
+  const store = process.env.BLOBS_TOKEN
+    ? getStore({
+        name: "shift-calculator",
+        siteID: process.env.SITE_ID || "476909e6-dd09-459e-9151-3dfbc92aba75",
+        token: process.env.BLOBS_TOKEN
+      })
+    : getStore("shift-calculator");
 
   try {
     if (event.httpMethod === "GET") {
