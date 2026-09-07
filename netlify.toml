@@ -1,0 +1,22 @@
+# Netlify build settings.
+# Default here assumes a plain static site (no build step) served from the
+# repo root. If your app uses a bundler, update `command` and `publish`
+# accordingly, e.g.:
+#
+#   Vite:                command = "npm run build"   publish = "dist"
+#   Create React App:     command = "npm run build"   publish = "build"
+#   Next.js (static export): command = "npm run build" publish = "out"
+
+[build]
+  command = ""
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Redirect all paths to index.html for single-page apps.
+# Delete this block for plain multi-page static sites.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
