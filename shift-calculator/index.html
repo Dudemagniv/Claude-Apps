@@ -523,30 +523,68 @@ function restWindows(fromMs, toMs, cfg){
 }
 
 /* ------------------------------------------------------------------ *
- * Storage: Claude's artifact store, else the browser, else memory
+ * Storage: Netlify function (synced), else the browser, else memory.
+ * localStorage is always kept as a write-through cache, so the app
+ * still works offline and reads are instant.
  * ------------------------------------------------------------------ */
 const Store = (function(){
   const mem = {};
-  const cloud = typeof window !== "undefined" && window.storage && typeof window.storage.get === "function";
   let local = false;
-  if(!cloud){
-    try{ window.localStorage.setItem("__probe","1"); window.localStorage.removeItem("__probe"); local = true; }
-    catch(e){ local = false; }
+  try{ window.localStorage.setItem("__probe","1"); window.localStorage.removeItem("__probe"); local = true; }
+  catch(e){ local = false; }
+
+  function localGet(key){
+    if(local){ try{ const v = window.localStorage.getItem(key); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+    return key in mem ? mem[key] : null;
   }
-  return {
-    mode: cloud ? "your Claude account" : local ? "this browser" : "this session only",
+  function localSet(key, val){
+    if(local){ try{ window.localStorage.setItem(key, JSON.stringify(val)); return; }catch(e){} }
+    mem[key] = val;
+  }
+
+  let cloudChecked = false, cloudOk = false;
+  async function ensureCloud(){
+    if(cloudChecked) return cloudOk;
+    cloudChecked = true;
+    try{ cloudOk = (await fetch("/.netlify/functions/data?key=__ping")).ok; }
+    catch(e){ cloudOk = false; }
+    return cloudOk;
+  }
+
+  const api = {
+    mode: "this browser only",
+    async init(){
+      const ok = await ensureCloud();
+      api.mode = ok ? "synced across your devices" : local ? "this browser only" : "this session only";
+      return ok;
+    },
     async get(key){
-      if(cloud){ try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : null; }catch(e){ return null; } }
-      if(local){ try{ const v = window.localStorage.getItem(key); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
-      return key in mem ? mem[key] : null;
+      if(await ensureCloud()){
+        try{
+          const r = await fetch("/.netlify/functions/data?key=" + encodeURIComponent(key));
+          if(r.ok){
+            const v = await r.json();
+            if(v !== null){ localSet(key, v); return v; }
+          }
+        }catch(e){}
+      }
+      return localGet(key);
     },
     async set(key, val){
-      const s = JSON.stringify(val);
-      if(cloud){ try{ await window.storage.set(key, s, false); return true; }catch(e){ return false; } }
-      if(local){ try{ window.localStorage.setItem(key, s); return true; }catch(e){ return false; } }
-      mem[key] = val; return true;
+      localSet(key, val);
+      if(await ensureCloud()){
+        try{
+          await fetch("/.netlify/functions/data", {
+            method:"PUT",
+            headers:{"content-type":"application/json"},
+            body: JSON.stringify({key, value: val})
+          });
+        }catch(e){}
+      }
+      return true;
     }
   };
+  return api;
 })();
 const KEY_SHIFTS = "shiftpay:shifts";
 const KEY_PREFS  = "shiftpay:prefs";
@@ -940,6 +978,7 @@ el.order.addEventListener("click", () => {
 });
 
 (async function boot(){
+  await Store.init();
   await loadPrefs();
   const saved = await Store.get(KEY_SHIFTS);
   shifts = Array.isArray(saved) ? saved : [];
