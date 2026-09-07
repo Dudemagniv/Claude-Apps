@@ -886,7 +886,7 @@ el.copyCsv.addEventListener("click", async () => {
 /* ------------------------------------------------------------------ *
  * Preferences
  * ------------------------------------------------------------------ */
-const PREF_IDS = ["city","lat","lon","tz","rite","candle","endMethod","endMinutes","mult","currency","rate","order"];
+const PREF_IDS = ["date","start","end","city","lat","lon","tz","rite","candle","endMethod","endMinutes","mult","currency","rate","order"];
 async function savePrefs(){
   const p = {v:2};
   PREF_IDS.forEach(id => { p[id] = $(id).value; });
