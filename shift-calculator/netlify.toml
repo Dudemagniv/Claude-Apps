@@ -14,9 +14,6 @@
 [build.environment]
   NODE_VERSION = "20"
 
-[functions]
-  directory = "netlify/functions"
-
 # Redirect all paths to index.html for single-page apps.
 # Delete this block for plain multi-page static sites.
 [[redirects]]
