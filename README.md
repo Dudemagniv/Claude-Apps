@@ -1,47 +1,65 @@
-# Netlify Web App Template
+# Claude Apps
 
-A reusable starting point: git repo + `netlify.toml` already configured so that
-**every `git push` to `main` auto-builds and deploys to Netlify** — no manual
-drag-and-drop uploads.
+A monorepo: one GitHub repo hosting multiple small web apps, each deployed as
+its own Netlify site. Every `git push` to `main` auto-builds and redeploys
+whichever app(s) changed — no manual drag-and-drop uploads.
 
-## One-time setup (do this once per new web app)
+## Structure
 
-1. **Copy this folder** for your new project (or use it as a GitHub "template
-   repository" — see below — to start with clean history).
-2. Replace `index.html` with your actual app, and update `netlify.toml` if
-   you're using a bundler (Vite, CRA, Next static export — see comments in
-   the file).
-3. Create a new GitHub repo and push:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/<you>/<repo>.git
-   git push -u origin main
-   ```
-4. On [app.netlify.com](https://app.netlify.com): **Add new site → Import an
-   existing project → GitHub** → pick the repo → confirm build settings (they
-   auto-fill from `netlify.toml`) → **Deploy**.
+Each app lives in its own subfolder with its own `netlify.toml`:
 
-That's it — Netlify is now watching the repo. From then on:
-
-```bash
-git add .
-git commit -m "..."
-git push
+```
+Claude Apps/
+  modlist-manager/
+    index.html
+    netlify.toml
+  <next-app>/
+    index.html
+    netlify.toml
 ```
 
-...and the live site updates automatically, no manual step.
+Each subfolder is connected to Netlify as a separate site, using that
+subfolder as the site's **base directory**. Sites don't interfere with each
+other — they just share one repo.
 
-## Making this an actual GitHub template repo (recommended)
+## Adding a new app
 
-Push this folder to GitHub once, then in the repo's **Settings → General →
-Template repository**, check the box. After that, "Use this template" on
-GitHub gives you a fresh copy with no shared git history for every new app —
-repeat step 4 above to connect each new repo to Netlify.
+One-time, per machine: install [Node.js](https://nodejs.org), then the
+Netlify CLI:
+```bash
+npm install -g netlify-cli
+netlify login
+```
+(`login` opens a browser once to authorize the CLI — after that no more
+dashboard visits are needed.)
 
-## Optional: deploy previews for pull requests
+For every new app:
+```bash
+mkdir new-app-name
+cp your-app.html "new-app-name/index.html"
+cp modlist-manager/netlify.toml new-app-name/netlify.toml   # reuse/adjust
+git add new-app-name
+git commit -m "Add new-app-name"
+git push
+cd new-app-name
+netlify init
+```
+`netlify init` creates the Netlify site, links it to this repo, sets the
+base directory to the current folder, and picks up build settings from
+`netlify.toml` — answer its 2-3 prompts and it's live. From then on, pushes
+to `main` that touch `new-app-name/` redeploy it automatically.
 
-Netlify does this automatically once the repo is connected — every PR gets
-its own preview URL, no extra config needed.
+## netlify.toml
+
+Default assumes a plain static site (no build step) served from the
+subfolder root. If an app uses a bundler, update `command` and `publish`
+accordingly, e.g.:
+
+- Vite: `command = "npm run build"`, `publish = "dist"`
+- Create React App: `command = "npm run build"`, `publish = "build"`
+- Next.js (static export): `command = "npm run build"`, `publish = "out"`
+
+## Deploy previews for pull requests
+
+Netlify does this automatically once a site is connected — every PR touching
+that site's subfolder gets its own preview URL, no extra config needed.
