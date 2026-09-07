@@ -565,6 +565,11 @@ const Store = (function(){
           if(r.ok){
             const v = await r.json();
             if(v !== null){ localSet(key, v); return v; }
+            // Cloud has nothing yet but this device has a local copy from
+            // before sync existed (or an offline write) — seed the cloud
+            // with it so other devices pick it up.
+            const cached = localGet(key);
+            if(cached !== null){ api.set(key, cached); return cached; }
           }
         }catch(e){}
       }
