@@ -1008,7 +1008,7 @@ body.lyrics-on .title { font-size: 40px; }
     r.style.width = w + 'px';
     r.style.left = Math.max(16, Math.min(Math.round(box.left), window.innerWidth - w - 16)) + 'px';
     show(r, true); resultsNote('Searching\u2026');
-    api('GET', '/search?type=track&limit=10&market=from_token&q=' + encodeURIComponent(q)).then(function (res) {
+    api('GET', '/search?type=track&limit=10&q=' + encodeURIComponent(q)).then(function (res) {
       if (seq !== searchSeq) return;
       var items = ((res && res.tracks && res.tracks.items) || []).filter(function (t) { return t && t.is_playable !== false; });
       r.innerHTML = '';
