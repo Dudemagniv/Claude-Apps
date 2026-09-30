@@ -293,10 +293,18 @@ body.lyrics-on .title { font-size: 40px; }
   .info { width: 100%; max-width: 560px; flex: none; }
   .controls, .lower { max-width: none; }
   .title { font-size: 46px; }
-  body.lyrics-on .lyrics { flex: none; width: 100%; max-width: 620px; height: calc(100vh - 720px); min-height: 140px; margin: 0 0 16px; }
-  body.lyrics-on .info { max-width: 620px; }
-  body.lyrics-on .title { font-size: 34px; }
-  .ly-line { font-size: 36px; }
+  body.lyrics-on .stage { justify-content: flex-start; align-items: stretch; }
+  body.lyrics-on .lyrics { flex: 1 1 auto; min-height: 0; width: 100%; height: auto; margin: 0 0 12px; }
+  body.lyrics-on .info { flex: none; width: 100%; max-width: none; min-width: 0; }
+  body.lyrics-on .title { font-size: 30px; margin-bottom: 6px; -webkit-line-clamp: 1; }
+  body.lyrics-on .artist { font-size: 19px; }
+  body.lyrics-on .album { display: none; }
+  body.lyrics-on .progress { margin-top: 10px; }
+  body.lyrics-on .controls { margin-top: 4px; }
+  body.lyrics-on .lower { margin-top: 6px; }
+  body.lyrics-on .ctl { width: 64px; height: 64px; }
+  body.lyrics-on .ctl.play { width: 88px; height: 88px; }
+  .ly-line { font-size: 42px; margin-bottom: 26px; }
 }
 @media (max-width: 500px) {
   #app { padding-left: 20px; padding-right: 20px; }
