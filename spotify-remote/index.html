@@ -323,6 +323,11 @@ body.lyrics-on .title { font-size: 40px; }
 .lyrics::-webkit-scrollbar, .list::-webkit-scrollbar, .results::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .ly-line { font-family: var(--title); font-weight: 600; font-size: 48px; line-height: 1.15; margin: 0 0 24px; color: var(--ink-3);
   -webkit-transition: color 0.4s ease; transition: color 0.4s ease; }
+.sync { display: none; align-items: center; margin-top: 10px; font-size: 15px; color: var(--ink-3); }
+body.lyrics-on .sync { display: flex; }
+.syncbtn { width: 44px; height: 44px; margin-left: 8px; border-radius: 50%; background: var(--shade); font-size: 26px; line-height: 44px; text-align: center; color: var(--ink); }
+.syncbtn:active { opacity: 0.6; }
+.syncval { min-width: 52px; margin-left: 8px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .ly-line.tap:active { color: var(--ink); }
 .ly-line.now { color: var(--ink); }
 .ly-line.past { color: var(--ink-2); }
@@ -446,6 +451,13 @@ body.lyrics-on .title { font-size: 40px; }
         </button>
       </div>
 
+      <div class="sync">
+        <span>Lyrics timing</span>
+        <button class="syncbtn" id="sync-minus" aria-label="Lyrics earlier">&minus;</button>
+        <span class="syncval" id="sync-val">1.5s</span>
+        <button class="syncbtn" id="sync-plus" aria-label="Lyrics later">+</button>
+      </div>
+
       <div class="progress">
         <div class="bar">
           <div class="rail"></div><div class="fill" id="seek-fill"></div>
@@ -517,7 +529,7 @@ body.lyrics-on .title { font-size: 40px; }
     'playlist-read-private', 'playlist-read-collaborative',
     'user-library-read', 'user-library-modify'
   ].join(' ');
-  var KEY = { mode: 'sr_lyrics', cid: 'sr_client_id', tok: 'sr_tokens', ver: 'sr_verifier', state: 'sr_state' };
+  var KEY = { lead: 'sr_lead', mode: 'sr_lyrics', cid: 'sr_client_id', tok: 'sr_tokens', ver: 'sr_verifier', state: 'sr_state' };
   var REDIRECT = location.origin + location.pathname;
   var DEFAULT_BG = '#3a2c4a';
 
@@ -786,7 +798,7 @@ body.lyrics-on .title { font-size: 40px; }
   }
 
   // ---------- lyrics (LRCLIB: free, no key) ----------
-  var ly = { id: '', lines: null, synced: false, active: -1, els: [], anim: 0, prog: false, userUntil: 0, dirty: false };
+  var ly = { lead: 1500, id: '', lines: null, synced: false, active: -1, els: [], anim: 0, prog: false, userUntil: 0, dirty: false };
   function lyMsg(text) {
     var inner = $('ly-inner'); inner.innerHTML = '';
     var d = document.createElement('div'); d.className = 'ly-msg'; d.textContent = text; inner.appendChild(d);
@@ -817,15 +829,18 @@ body.lyrics-on .title { font-size: 40px; }
   }
   function seekLyric(ms) {
     if (!st.p || !st.p.item) return;
+    ms = Math.max(0, ms - ly.lead);
     ms = Math.max(0, Math.min(ms, (st.p.item.duration_ms || ms) - 500));
     st.p.progress_ms = ms; st.at = Date.now(); ly.userUntil = 0; tick();
     command('PUT', '/me/player/seek?position_ms=' + ms);
   }
   function parseLrc(txt) {
     var out = [];
+    var off = 0, om = /\[offset:\s*([+-]?\d+)\s*\]/i.exec(txt);
+    if (om) off = parseInt(om[1], 10) || 0;
     txt.split('\n').forEach(function (ln) {
       var m = /^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$/.exec(ln);
-      if (m) out.push({ t: (+m[1]) * 60000 + Math.round(parseFloat(m[2]) * 1000), s: m[3] });
+      if (m) out.push({ t: Math.max(0, (+m[1]) * 60000 + Math.round(parseFloat(m[2]) * 1000) - off), s: m[3] });
     });
     return out;
   }
@@ -857,8 +872,13 @@ body.lyrics-on .title { font-size: 40px; }
       return fetch(base + 'search?artist_name=' + encodeURIComponent(artist) + '&track_name=' + encodeURIComponent(item.name))
         .then(function (r2) { return r2.ok ? r2.json() : []; })
         .then(function (arr) {
-          for (var i = 0; i < arr.length; i++) if (arr[i].syncedLyrics) return arr[i];
-          return arr[0] || {};
+          var want = item.duration_ms / 1000, best = null, bestD = 1e9;
+          for (var i = 0; i < arr.length; i++) {
+            if (!arr[i].syncedLyrics) continue;
+            var d = Math.abs((arr[i].duration || want) - want);
+            if (d < bestD) { bestD = d; best = arr[i]; }
+          }
+          return best || arr[0] || {};
         });
     }).then(function (res) { if (ly.id === id) showLyrics(res || {}); })
       .catch(function () { if (ly.id === id) { ly.id = ''; lyMsg('Couldn\u2019t load lyrics.'); } });
@@ -868,7 +888,7 @@ body.lyrics-on .title { font-size: 40px; }
     var now = Date.now();
     // after you stop scrolling, drift back to the current line
     if (ly.dirty && now >= ly.userUntil && ly.active >= 0) { ly.dirty = false; centerLine(false); }
-    var i = -1, L = ly.lines, target = pos + 250;
+    var i = -1, L = ly.lines, target = pos + ly.lead;
     for (var k = 0; k < L.length; k++) { if (L[k].t <= target) i = k; else break; }
     if (i === ly.active) return;
     var first = ly.active === -1;
@@ -876,6 +896,11 @@ body.lyrics-on .title { font-size: 40px; }
     for (var j = 0; j < ly.els.length; j++) ly.els[j].className = 'ly-line tap' + (j === i ? ' now' : (j < i ? ' past' : ''));
     if (i < 0) return;
     if (now < ly.userUntil) ly.dirty = true; else centerLine(first);
+  }
+  function paintLead() { $('sync-val').textContent = (ly.lead / 1000).toFixed(2).replace(/0$/, '') + 's'; }
+  function nudgeLead(d) {
+    ly.lead = Math.max(0, Math.min(6000, ly.lead + d)); set(KEY.lead, String(ly.lead)); paintLead();
+    ly.active = -1; // re-place the highlight with the new timing
   }
   function setLyricsMode(on) {
     document.body.classList[on ? 'add' : 'remove']('lyrics-on');
@@ -1344,6 +1369,8 @@ body.lyrics-on .title { font-size: 40px; }
     ['touchstart', 'touchmove', 'wheel', 'mousedown'].forEach(function (ev) { lyPane.addEventListener(ev, userScroll); });
     lyPane.addEventListener('scroll', function () { if (!ly.prog) ly.userUntil = Date.now() + 3500; });
     window.addEventListener('resize', fitLyrics);
+    $('sync-minus').addEventListener('click', function () { nudgeLead(-250); });
+    $('sync-plus').addEventListener('click', function () { nudgeLead(250); });
     var unscroll = function () { window.scrollTo(0, 0); document.body.scrollTop = 0; document.documentElement.scrollTop = 0; };
     window.addEventListener('resize', unscroll); window.addEventListener('orientationchange', function () { setTimeout(unscroll, 300); });
     window.addEventListener('scroll', unscroll);
@@ -1388,6 +1415,9 @@ body.lyrics-on .title { font-size: 40px; }
   }
 
   bind();
+  var savedLead = parseInt(get(KEY.lead), 10);
+  if (!isNaN(savedLead)) ly.lead = Math.max(0, Math.min(6000, savedLead));
+  paintLead();
   if (get(KEY.mode) === '1') setLyricsMode(true);
   handleRedirect().then(function () {
     if (getTokens()) startApp(); else showSetup();
