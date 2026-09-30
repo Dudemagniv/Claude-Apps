@@ -110,6 +110,25 @@ svg { display: block; }
 }
 .clock { font-family: var(--title); font-size: 38px; font-weight: 600; letter-spacing: 0.5px; }
 .top-actions { display: flex; align-items: center; }
+.searchbox {
+  flex: 1; min-width: 120px; max-width: 440px; height: 56px; margin: 0 20px;
+  display: flex; align-items: center; padding: 0 18px;
+  background: var(--shade); border-radius: 28px; color: var(--ink-2);
+}
+.searchbox > svg { width: 26px; height: 26px; flex-shrink: 0; margin-right: 10px; }
+.searchbox input {
+  flex: 1; min-width: 0; font: inherit; font-size: 19px; color: var(--ink); background: transparent;
+  border: 0; padding: 0; height: 100%; -webkit-appearance: none; -webkit-user-select: text; user-select: text;
+}
+.searchbox input:focus { outline: none; }
+.searchbox input::-webkit-input-placeholder { color: var(--ink-3); }
+.searchbox input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.results {
+  position: fixed; top: 84px; left: 40px; width: 460px; max-width: calc(100vw - 32px);
+  max-height: 62vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: #1c1822; color: var(--ink); border-radius: 16px; padding: 6px 0;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 6;
+}
 .chip {
   display: flex; align-items: center; height: 56px; padding: 0 20px 0 16px;
   border-radius: 28px; background: var(--shade); font-size: 18px; font-weight: 500;
@@ -233,17 +252,10 @@ svg { display: block; }
 #panel.open { -webkit-transform: translate3d(0,0,0); transform: translate3d(0,0,0); }
 .tabs { display: flex; padding: 16px 16px 0; border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .tab {
-  flex: 1; padding: 18px 0 20px; font-size: 18px; font-weight: 600; color: var(--ink-3);
+  flex: 1; padding: 18px 0 20px; font-size: 20px; font-weight: 600; color: var(--ink-3);
   border-bottom: 3px solid transparent; margin-bottom: -1px;
 }
 .tab.on { color: var(--ink); border-bottom-color: var(--accent); }
-.search { padding: 14px 16px 6px; flex-shrink: 0; }
-.search input {
-  width: 100%; font: inherit; font-size: 19px; color: var(--ink); -webkit-appearance: none;
-  background: rgba(255,255,255,0.08); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
-  -webkit-user-select: text; user-select: text;
-}
-.search input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 0; }
 .row {
   display: flex; align-items: center; width: 100%; text-align: left;
@@ -308,6 +320,8 @@ body.lyrics-on .title { font-size: 40px; }
 /* ---------- portrait & small screens ---------- */
 @media (orientation: portrait) {
   #app { padding-left: 32px; padding-right: 32px; }
+  .searchbox { margin: 0 12px; }
+  .chip { max-width: 190px; }
   .stage { flex-direction: column; justify-content: center; }
   .art-wrap {
     width: 72vw; height: 72vw; max-width: calc(100vh - 720px); max-height: calc(100vh - 720px);
@@ -377,6 +391,11 @@ body.lyrics-on .title { font-size: 40px; }
 <div id="app" class="hidden">
   <div class="topbar">
     <div class="clock" id="clock">--:--</div>
+    <div class="searchbox" id="searchbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input id="q" type="search" placeholder="Search songs" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      <div class="results hidden" id="results"></div>
+    </div>
     <div class="top-actions">
       <button class="chip icon-only" id="btn-lyrics" aria-label="Lyrics">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -458,11 +477,7 @@ body.lyrics-on .title { font-size: 40px; }
   <div class="tabs">
     <button class="tab on" data-tab="queue">Up next</button>
     <button class="tab" data-tab="playlists">Playlists</button>
-    <button class="tab" data-tab="search">Search</button>
     <button class="tab" data-tab="devices">Devices</button>
-  </div>
-  <div class="search hidden" id="search">
-    <input id="q" type="search" placeholder="Search songs or artists" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
   </div>
   <div class="list" id="list"></div>
   <div class="panel-foot">
@@ -625,7 +640,7 @@ body.lyrics-on .title { font-size: 40px; }
   function handleError(e) {
     if (!e) return;
     if (e.status === 401) { signOut('Your Spotify session ended. Sign in again.'); return; }
-    if (e.status === 403) { toast(e.reason === 'PREMIUM_REQUIRED' ? 'Playback control needs Spotify Premium.' : 'Spotify refused that action.'); return; }
+    if (e.status === 403) { toast(e.reason === 'PREMIUM_REQUIRED' ? 'Playback control needs Spotify Premium.' : 'Spotify refused that: ' + (e.message || e.reason || '')); return; }
     if (e.status === 404 && (e.reason === 'NO_ACTIVE_DEVICE' || /device/i.test(e.message || ''))) {
       toast('No active device. Choose one to play on.'); openPanel('devices'); return;
     }
@@ -936,7 +951,6 @@ body.lyrics-on .title { font-size: 40px; }
     if (tab) currentTab = tab;
     var tabs = document.querySelectorAll('.tab');
     for (var i = 0; i < tabs.length; i++) tabs[i].classList[tabs[i].getAttribute('data-tab') === currentTab ? 'add' : 'remove']('on');
-    show($('search'), currentTab === 'search');
     $('panel').classList.add('open'); $('scrim').classList.add('open');
     $('panel').setAttribute('aria-hidden', 'false');
     loadTab();
@@ -981,29 +995,56 @@ body.lyrics-on .title { font-size: 40px; }
 
   var DJ_URI = 'spotify:playlist:37i9dQZF1EYkqdzj48dyYq';
   var searchSeq = 0;
+  function hideResults() { show($('results'), false); }
+  function resultsNote(text) {
+    var r = $('results'); r.innerHTML = '';
+    var d = document.createElement('div'); d.className = 'list-note'; d.textContent = text; r.appendChild(d);
+  }
   function runSearch() {
-    var q = $('q').value.trim(), seq = ++searchSeq;
-    if (!q) { note('Type a song or artist above.'); return; }
-    note('Searching…');
+    var q = $('q').value.trim(), seq = ++searchSeq, r = $('results');
+    if (!q) { hideResults(); return; }
+    var box = $('searchbox').getBoundingClientRect(), w = Math.min(460, window.innerWidth - 32);
+    r.style.top = Math.round(box.bottom + 8) + 'px';
+    r.style.width = w + 'px';
+    r.style.left = Math.max(16, Math.min(Math.round(box.left), window.innerWidth - w - 16)) + 'px';
+    show(r, true); resultsNote('Searching\u2026');
     api('GET', '/search?type=track&limit=10&q=' + encodeURIComponent(q)).then(function (res) {
-      if (seq !== searchSeq || currentTab !== 'search') return;
-      var items = (res && res.tracks && res.tracks.items) || [], l = clearList();
-      if (!items.length) { note('Nothing found for “' + q + '”.'); return; }
+      if (seq !== searchSeq) return;
+      var items = (res && res.tracks && res.tracks.items) || [];
+      r.innerHTML = '';
+      if (!items.length) { resultsNote('Nothing found for \u201c' + q + '\u201d.'); return; }
       items.forEach(function (t) {
         if (!t) return;
-        l.appendChild(row({ t1: t.name, t2: describe(t), img: artOf(t), onTap: function () { playTrack(t); } }));
+        r.appendChild(row({ t1: t.name, t2: describe(t), img: artOf(t), onTap: function () { playTrack(t); } }));
       });
-    }).catch(function (e) { if (seq === searchSeq) note('Couldn’t search.'); handleError(e); });
+    }).catch(function (e) {
+      if (seq !== searchSeq) return;
+      resultsNote('Search failed' + (e && e.message ? ': ' + e.message : '.'));
+      if (e && e.status === 401) handleError(e);
+    });
   }
   function playTrack(t) {
     var devId = st.p && st.p.device && st.p.device.id;
-    closePanel(); toast('Playing ' + t.name);
-    command('PUT', '/me/player/play' + (devId ? '?device_id=' + devId : ''), { uris: [t.uri] });
+    hideResults(); $('q').value = ''; $('q').blur(); toast('Playing ' + t.name);
+    st.lockUntil = Date.now() + 900;
+    var play = function (withDevice) {
+      return api('PUT', '/me/player/play' + (withDevice && devId ? '?device_id=' + devId : ''), { uris: [t.uri] });
+    };
+    play(true).catch(function (e) {
+      // the device may be idle: wake it with a transfer, then try once more
+      if (devId && (e.status === 404 || e.status === 502 || e.status === 500)) {
+        return api('PUT', '/me/player', { device_ids: [devId], play: false }).then(function () {
+          return new Promise(function (ok) { setTimeout(ok, 700); });
+        }).then(function () { return play(true); });
+      }
+      throw e;
+    }).then(function () {
+      setTimeout(function () { st.lockUntil = 0; poll(); }, 900);
+    }).catch(function (e) { st.lockUntil = 0; handleError(e); poll(); });
   }
 
   function loadTab() {
     var tab = currentTab;
-    if (tab === 'search') { runSearch(); return; }
     note('Loading…');
     if (tab === 'queue') {
       api('GET', '/me/player/queue').then(function (q) {
@@ -1139,6 +1180,10 @@ body.lyrics-on .title { font-size: 40px; }
     $('btn-logout').addEventListener('click', function () { signOut(); });
     $('btn-token').addEventListener('click', showToken);
     var qTimer;
+    document.addEventListener('click', function (e) {
+      if (!(e.target.closest && e.target.closest('#searchbox'))) hideResults();
+    });
+    $('q').addEventListener('focus', function () { if ($('q').value.trim()) runSearch(); });
     $('q').addEventListener('input', function () { clearTimeout(qTimer); qTimer = setTimeout(runSearch, 400); });
     $('q').addEventListener('keyup', function (e) { if (e.keyCode === 13) { clearTimeout(qTimer); runSearch(); this.blur(); } });
 
@@ -1169,7 +1214,7 @@ body.lyrics-on .title { font-size: 40px; }
 
     // stop iOS from rubber-banding the whole page, but keep lists scrollable
     document.addEventListener('touchmove', function (e) {
-      if (!e.target.closest || !e.target.closest('.list, #setup, .bar, .lyrics.plain')) e.preventDefault();
+      if (!e.target.closest || !e.target.closest('.list, #setup, .bar, .lyrics.plain, .results')) e.preventDefault();
     }, { passive: false });
   }
 
