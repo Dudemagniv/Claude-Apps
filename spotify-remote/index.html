@@ -25,7 +25,7 @@
   --body: "Barlow", -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; margin: 0; background-color: var(--bg); }
+html, body { height: 100%; margin: 0; background-color: var(--bg); overflow: hidden; }
 body {
   color: var(--ink);
   font-family: var(--body);
@@ -246,19 +246,21 @@ svg { display: block; }
 /* ---------- side panel ---------- */
 #scrim {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.35);
-  opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, visibility 0s linear 0.25s;
 }
-#scrim.open { opacity: 1; pointer-events: auto; }
+#scrim.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.25s ease, visibility 0s; }
 #panel {
   position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw;
   background: #1c1822; color: var(--ink);
   -webkit-transform: translate3d(100%,0,0); transform: translate3d(100%,0,0);
-  transition: -webkit-transform 0.28s ease; transition: transform 0.28s ease;
+  visibility: hidden;
+  transition: -webkit-transform 0.28s ease, visibility 0s linear 0.28s; transition: transform 0.28s ease, visibility 0s linear 0.28s;
   display: flex; flex-direction: column;
   padding-top: env(safe-area-inset-top);
   box-shadow: -20px 0 50px rgba(0,0,0,0.35);
 }
-#panel.open { -webkit-transform: translate3d(0,0,0); transform: translate3d(0,0,0); }
+#panel.open { visibility: visible; -webkit-transform: translate3d(0,0,0); transform: translate3d(0,0,0);
+  transition: -webkit-transform 0.28s ease, visibility 0s; transition: transform 0.28s ease, visibility 0s; }
 .tabs { display: flex; padding: 16px 16px 0; border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .tab {
   flex: 1; padding: 18px 0 20px; font-size: 20px; font-weight: 600; color: var(--ink-3);
@@ -301,12 +303,13 @@ svg { display: block; }
   -webkit-transform: translate(-50%, 20px); transform: translate(-50%, 20px);
   background: #fff; color: #1b1422; font-size: 16px; font-weight: 500;
   padding: 12px 20px; border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  opacity: 0; pointer-events: none; transition: opacity 0.25s ease, -webkit-transform 0.25s ease;
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s ease, -webkit-transform 0.25s ease, visibility 0s linear 0.25s;
 }
-#toast.show { opacity: 1; -webkit-transform: translate(-50%, 0); transform: translate(-50%, 0); }
+#toast.show { opacity: 1; visibility: visible; -webkit-transform: translate(-50%, 0); transform: translate(-50%, 0);
+  transition: opacity 0.25s ease, -webkit-transform 0.25s ease, visibility 0s; }
 
 /* ---------- lyrics ---------- */
-.lyrics { display: none; position: relative; overflow: hidden; }
+.lyrics { display: none; position: relative; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 body.lyrics-on .art-wrap { display: none; }
 body.lyrics-on .lyrics { display: block; flex: 1.5; min-width: 0; height: 100%; margin-right: 40px;
   -webkit-mask-image: -webkit-linear-gradient(top, transparent 0, #000 14%, #000 86%, transparent 100%);
@@ -316,14 +319,14 @@ body.lyrics-on .lyrics { margin-right: 28px; }
 body.lyrics-on .ctl { width: 64px; height: 64px; }
 body.lyrics-on .ctl.play { width: 96px; height: 96px; }
 body.lyrics-on .title { font-size: 40px; }
-.ly-inner { padding: 40vh 0; -webkit-transition: -webkit-transform 0.5s ease; transition: transform 0.5s ease; }
+.ly-inner { padding: 0; }
 .ly-line { font-family: var(--title); font-weight: 600; font-size: 48px; line-height: 1.15; margin: 0 0 24px; color: var(--ink-3);
   -webkit-transition: color 0.4s ease; transition: color 0.4s ease; }
+.ly-line.tap:active { color: var(--ink); }
 .ly-line.now { color: var(--ink); }
 .ly-line.past { color: var(--ink-2); }
-.lyrics.plain { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .lyrics.plain .ly-line { color: var(--ink); font-size: 34px; margin-bottom: 14px; }
-.ly-msg { font-size: 22px; color: var(--ink-2); padding: 40vh 0; }
+.ly-msg { font-size: 22px; color: var(--ink-2); padding: 30% 0; }
 .chip.on { background: var(--ink); color: #1b1422; }
 
 /* ---------- portrait & small screens ---------- */
@@ -782,17 +785,40 @@ body.lyrics-on .title { font-size: 40px; }
   }
 
   // ---------- lyrics (LRCLIB: free, no key) ----------
-  var ly = { id: '', lines: null, synced: false, active: -1, els: [] };
-  function setInnerY(y) {
-    var inner = $('ly-inner');
-    inner.style.webkitTransform = 'translate3d(0,' + y + 'px,0)';
-    inner.style.transform = 'translate3d(0,' + y + 'px,0)';
-  }
+  var ly = { id: '', lines: null, synced: false, active: -1, els: [], anim: 0, prog: false, userUntil: 0, dirty: false };
   function lyMsg(text) {
     var inner = $('ly-inner'); inner.innerHTML = '';
     var d = document.createElement('div'); d.className = 'ly-msg'; d.textContent = text; inner.appendChild(d);
-    $('lyrics').classList.remove('plain'); inner.style.padding = '';
-    ly.lines = null; ly.els = []; ly.active = -1; setInnerY(0);
+    $('lyrics').classList.remove('plain'); inner.style.padding = '0';
+    ly.lines = null; ly.els = []; ly.active = -1; $('lyrics').scrollTop = 0;
+  }
+  // padding lets the first and last synced lines reach the middle of the pane
+  function fitLyrics() {
+    if (!ly.lines) return;
+    $('ly-inner').style.padding = ly.synced ? Math.round($('lyrics').clientHeight / 2) + 'px 0' : '0 0 40px';
+  }
+  // Safari 12 has no smooth scrolling, so ease it by hand; ly.prog marks our own scrolling
+  function scrollPane(to, instant) {
+    var pane = $('lyrics'), id = ++ly.anim;
+    if (instant || !window.requestAnimationFrame) { ly.prog = true; pane.scrollTop = to; setTimeout(function () { ly.prog = false; }, 50); return; }
+    var from = pane.scrollTop, t0 = Date.now(), dur = 450;
+    ly.prog = true;
+    (function step() {
+      if (ly.anim !== id) return;
+      var k = Math.min(1, (Date.now() - t0) / dur); k = 1 - Math.pow(1 - k, 3);
+      pane.scrollTop = from + (to - from) * k;
+      if (k < 1) requestAnimationFrame(step); else ly.prog = false;
+    })();
+  }
+  function centerLine(instant) {
+    var el = ly.els[ly.active]; if (!el) return;
+    scrollPane(el.offsetTop + el.offsetHeight / 2 - $('lyrics').clientHeight / 2, instant);
+  }
+  function seekLyric(ms) {
+    if (!st.p || !st.p.item) return;
+    ms = Math.max(0, Math.min(ms, (st.p.item.duration_ms || ms) - 500));
+    st.p.progress_ms = ms; st.at = Date.now(); ly.userUntil = 0; tick();
+    command('PUT', '/me/player/seek?position_ms=' + ms);
   }
   function parseLrc(txt) {
     var out = [];
@@ -810,11 +836,12 @@ body.lyrics-on .title { font-size: 40px; }
     else if (res.plainLyrics) { lines = res.plainLyrics.split('\n').map(function (s) { return { t: 0, s: s }; }); ly.synced = false; }
     else { lyMsg(res.instrumental ? 'Instrumental' : 'No lyrics found for this song.'); return; }
     pane.classList[ly.synced ? 'remove' : 'add']('plain');
-    inner.style.padding = ly.synced ? '' : '0 0 40px';
     lines.forEach(function (l) {
-      var d = document.createElement('div'); d.className = 'ly-line'; d.textContent = l.s || '\u266a'; inner.appendChild(d); ly.els.push(d);
+      var d = document.createElement('div'); d.className = 'ly-line' + (ly.synced ? ' tap' : ''); d.textContent = l.s || '\u266a';
+      if (ly.synced) d.addEventListener('click', function () { seekLyric(l.t); });
+      inner.appendChild(d); ly.els.push(d);
     });
-    ly.lines = lines; pane.scrollTop = 0; setInnerY(0);
+    ly.lines = lines; ly.userUntil = 0; ly.dirty = false; fitLyrics(); pane.scrollTop = 0;
   }
   function loadLyrics(item) {
     if (!document.body.classList.contains('lyrics-on') || item.type === 'episode' || !item.id) return;
@@ -837,20 +864,24 @@ body.lyrics-on .title { font-size: 40px; }
   }
   function syncLyrics(pos) {
     if (!ly.lines || !ly.synced) return;
+    var now = Date.now();
+    // after you stop scrolling, drift back to the current line
+    if (ly.dirty && now >= ly.userUntil && ly.active >= 0) { ly.dirty = false; centerLine(false); }
     var i = -1, L = ly.lines, target = pos + 250;
     for (var k = 0; k < L.length; k++) { if (L[k].t <= target) i = k; else break; }
     if (i === ly.active) return;
+    var first = ly.active === -1;
     ly.active = i;
-    for (var j = 0; j < ly.els.length; j++) ly.els[j].className = 'ly-line' + (j === i ? ' now' : (j < i ? ' past' : ''));
+    for (var j = 0; j < ly.els.length; j++) ly.els[j].className = 'ly-line tap' + (j === i ? ' now' : (j < i ? ' past' : ''));
     if (i < 0) return;
-    var el = ly.els[i];
-    setInnerY($('lyrics').clientHeight / 2 - (el.offsetTop + el.offsetHeight / 2));
+    if (now < ly.userUntil) ly.dirty = true; else centerLine(first);
   }
   function setLyricsMode(on) {
     document.body.classList[on ? 'add' : 'remove']('lyrics-on');
     $('btn-lyrics').classList[on ? 'add' : 'remove']('on');
     set(KEY.mode, on ? '1' : '0');
     if (on && st.p && st.p.item) { ly.id = ''; loadLyrics(st.p.item); }
+    if (on) fitLyrics();
   }
 
   function tick() {
@@ -1288,6 +1319,14 @@ body.lyrics-on .title { font-size: 40px; }
     $('scrim').addEventListener('click', closePanel);
     $('btn-logout').addEventListener('click', function () { signOut(); });
     $('btn-token').addEventListener('click', showToken);
+    var lyPane = $('lyrics'), userScroll = function () { ly.anim++; ly.prog = false; ly.userUntil = Date.now() + 4500; };
+    ['touchstart', 'touchmove', 'wheel', 'mousedown'].forEach(function (ev) { lyPane.addEventListener(ev, userScroll); });
+    lyPane.addEventListener('scroll', function () { if (!ly.prog) ly.userUntil = Date.now() + 3500; });
+    window.addEventListener('resize', fitLyrics);
+    var unscroll = function () { window.scrollTo(0, 0); document.body.scrollTop = 0; document.documentElement.scrollTop = 0; };
+    window.addEventListener('resize', unscroll); window.addEventListener('orientationchange', function () { setTimeout(unscroll, 300); });
+    window.addEventListener('scroll', unscroll);
+    $('q').addEventListener('blur', function () { setTimeout(unscroll, 100); });
     var qTimer;
     document.addEventListener('click', function (e) {
       if (!(e.target.closest && e.target.closest('#searchbox'))) hideResults();
@@ -1323,7 +1362,7 @@ body.lyrics-on .title { font-size: 40px; }
 
     // stop iOS from rubber-banding the whole page, but keep lists scrollable
     document.addEventListener('touchmove', function (e) {
-      if (!e.target.closest || !e.target.closest('.list, #setup, .bar, .lyrics.plain, .results')) e.preventDefault();
+      if (!e.target.closest || !e.target.closest('.list, #setup, .bar, .lyrics, .results')) e.preventDefault();
     }, { passive: false });
   }
 
