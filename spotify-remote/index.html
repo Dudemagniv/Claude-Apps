@@ -278,11 +278,6 @@ body.lyrics-on .title { font-size: 40px; }
 .ly-msg { font-size: 22px; color: var(--ink-2); padding: 40vh 0; }
 .chip.on { background: var(--ink); color: #1b1422; }
 
-/* ---------- distraction-free mode ---------- */
-body.full .top-actions, body.full .controls, body.full .lower { display: none; }
-body.full .art-wrap { max-width: calc(100vh - 110px); max-height: calc(100vh - 110px); }
-body.full .progress { margin-top: 24px; }
-
 /* ---------- portrait & small screens ---------- */
 @media (orientation: portrait) {
   #app { padding-left: 32px; padding-right: 32px; }
@@ -349,9 +344,6 @@ body.full .progress { margin-top: 24px; }
     <div class="top-actions">
       <button class="chip icon-only" id="btn-lyrics" aria-label="Lyrics">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="13" y2="17"/></svg>
-      </button>
-      <button class="chip icon-only" id="btn-full" aria-label="Fullscreen">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 4 4 9 4"/><polyline points="20 9 20 4 15 4"/><polyline points="4 15 4 20 9 20"/><polyline points="20 15 20 20 15 20"/></svg>
       </button>
       <button class="chip" id="btn-device" aria-label="Choose device">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><line x1="12" y1="6" x2="12.01" y2="6"/></svg>
@@ -771,17 +763,6 @@ body.full .progress { margin-top: 24px; }
     if (on && st.p && st.p.item) { ly.id = ''; loadLyrics(st.p.item); }
   }
 
-  // ---------- fullscreen / distraction-free ----------
-  function setFull(on) {
-    document.body.classList[on ? 'add' : 'remove']('full');
-    var d = document, de = d.documentElement;
-    try {
-      if (on) { var rq = de.requestFullscreen || de.webkitRequestFullscreen; if (rq) rq.call(de); }
-      else if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
-    } catch (e) {}
-    if (on) toast('Tap the screen to bring the controls back.');
-  }
-
   function tick() {
     var p = st.p;
     if (!p || !p.item || st.seeking) return;
@@ -1064,10 +1045,6 @@ body.full .progress { margin-top: 24px; }
     $('btn-like').addEventListener('click', toggleLike);
     $('btn-device').addEventListener('click', function () { openPanel('devices'); });
     $('btn-lyrics').addEventListener('click', function () { setLyricsMode(!document.body.classList.contains('lyrics-on')); });
-    $('btn-full').addEventListener('click', function (e) { e.stopPropagation(); setFull(true); });
-    $('app').addEventListener('click', function (e) {
-      if (document.body.classList.contains('full') && !(e.target.closest && e.target.closest('.bar'))) setFull(false);
-    });
     $('btn-queue').addEventListener('click', function () { openPanel('queue'); });
     $('scrim').addEventListener('click', closePanel);
     $('btn-logout').addEventListener('click', function () { signOut(); });
