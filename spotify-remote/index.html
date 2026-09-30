@@ -106,12 +106,12 @@ svg { display: block; }
 }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  height: 56px; flex-shrink: 0;
+  height: 56px; flex-shrink: 0; position: relative;
 }
 .clock { font-family: var(--title); font-size: 38px; font-weight: 600; letter-spacing: 0.5px; }
-.top-actions { display: flex; align-items: center; }
+.top-actions { display: flex; align-items: center; } .top-actions .chip:first-child { margin-left: 0; }
 .searchbox {
-  flex: 1; min-width: 120px; max-width: 440px; height: 56px; margin: 0 20px;
+  flex: 0 1 auto; width: 340px; min-width: 120px; margin: 0 auto; height: 56px;
   display: flex; align-items: center; padding: 0 18px;
   background: var(--shade); border-radius: 28px; color: var(--ink-2);
 }
@@ -323,7 +323,7 @@ body.lyrics-on .title { font-size: 40px; }
 /* ---------- portrait & small screens ---------- */
 @media (orientation: portrait) {
   #app { padding-left: 32px; padding-right: 32px; }
-  .searchbox { margin: 0 12px; }
+  .searchbox { width: 260px; }
   .chip { max-width: 190px; }
   .stage { flex-direction: column; justify-content: center; }
   .art-wrap {
@@ -877,12 +877,14 @@ body.lyrics-on .title { font-size: 40px; }
 
   function checkLiked(id) {
     if (st.likeId === id) return;
-    st.likeId = id;
-    api('GET', '/me/tracks/contains?ids=' + id).then(function (res) {
+    st.likeId = id; st.liked = false; paintLike(); show($('btn-like'), true);
+    // newer unified library endpoint first, the older per-type one as a fallback
+    api('GET', '/me/library/contains?uris=' + encodeURIComponent('spotify:track:' + id)).catch(function () {
+      return api('GET', '/me/tracks/contains?ids=' + id);
+    }).then(function (res) {
       if (st.likeId !== id) return;
-      st.liked = !!(res && res[0]);
-      paintLike(); show($('btn-like'), true);
-    }).catch(function () { show($('btn-like'), false); });
+      st.liked = !!(res && res[0]); paintLike();
+    }).catch(function () {});
   }
   function paintLike() {
     $('btn-like').classList[st.liked ? 'add' : 'remove']('on');
@@ -939,9 +941,12 @@ body.lyrics-on .title { font-size: 40px; }
   function toggleLike() {
     var item = st.p && st.p.item; if (!item || !item.id) return;
     st.liked = !st.liked; paintLike();
-    api(st.liked ? 'PUT' : 'DELETE', '/me/tracks?ids=' + item.id).then(function () {
-      toast(st.liked ? 'Saved to Liked Songs' : 'Removed from Liked Songs');
-    }).catch(function (e) { st.liked = !st.liked; paintLike(); handleError(e); });
+    var method = st.liked ? 'PUT' : 'DELETE', saved = st.liked;
+    api(method, '/me/library?uris=' + encodeURIComponent('spotify:track:' + item.id)).catch(function () {
+      return api(method, '/me/tracks?ids=' + item.id);
+    }).then(function () {
+      toast(saved ? 'Saved to Liked Songs' : 'Removed from Liked Songs');
+    }).catch(function (e) { st.liked = !saved; paintLike(); handleError(e); });
   }
 
   var volTimer;
@@ -1014,7 +1019,7 @@ body.lyrics-on .title { font-size: 40px; }
     var box = $('searchbox').getBoundingClientRect(), w = Math.min(460, window.innerWidth - 32);
     r.style.top = Math.round(box.bottom + 8) + 'px';
     r.style.width = w + 'px';
-    r.style.left = Math.max(16, Math.min(Math.round(box.left), window.innerWidth - w - 16)) + 'px';
+    r.style.left = Math.max(16, Math.min(Math.round(box.left + box.width / 2 - w / 2), window.innerWidth - w - 16)) + 'px';
     show(r, true); resultsNote('Searching\u2026');
     api('GET', '/search?type=track&limit=10&q=' + encodeURIComponent(q)).then(function (res) {
       if (seq !== searchSeq) return;
