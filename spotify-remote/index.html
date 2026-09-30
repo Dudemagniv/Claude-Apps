@@ -220,14 +220,16 @@ svg { display: block; }
 .ctl:active { opacity: 0.6; }
 .ctl.play:active { -webkit-transform: scale(0.94); transform: scale(0.94); opacity: 1; }
 
-.lower { display: flex; flex-wrap: wrap; align-items: center; margin-top: 24px; max-width: 560px; }
-.like { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; margin-right: 18px; margin-left: -12px; color: var(--ink-2); }
+.lower { display: flex; align-items: center; margin-top: 24px; max-width: 560px; }
+.meta { display: flex; align-items: center; }
+.meta-text { flex: 1; min-width: 0; }
+.like { flex-shrink: 0; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; margin-left: 12px; margin-right: -14px; color: var(--ink-2); }
 .like svg { width: 38px; height: 38px; }
 .like.on { color: var(--accent); }
-.vol { flex: 1 1 260px; min-width: 260px; max-width: 360px; margin-right: 14px; display: flex; align-items: center; }
+.vol { flex-shrink: 0; width: 300px; margin-right: 44px; display: flex; align-items: center; }
 .vol > svg { width: 30px; height: 30px; color: var(--ink-2); margin-right: 10px; flex-shrink: 0; }
 .vol .bar { flex: 1; }
-.next { flex: 1 1 160px; min-width: 160px; display: flex; align-items: center; }
+.next { flex: 1; min-width: 0; display: flex; align-items: center; }
 .next img { width: 46px; height: 46px; border-radius: 4px; object-fit: cover; flex-shrink: 0; margin-right: 10px; background: var(--shade); }
 .next .txt { min-width: 0; }
 .next .nl { font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-3); }
@@ -341,6 +343,7 @@ body.lyrics-on .title { font-size: 40px; }
   body.lyrics-on .progress { margin-top: 10px; }
   body.lyrics-on .controls { margin-top: 4px; }
   body.lyrics-on .lower { margin-top: 6px; }
+  .vol { width: 340px; }
   body.lyrics-on .ctl { width: 64px; height: 64px; }
   body.lyrics-on .ctl.play { width: 88px; height: 88px; }
   .ly-line { font-size: 42px; margin-bottom: 26px; }
@@ -423,8 +426,15 @@ body.lyrics-on .title { font-size: 40px; }
 
     <div class="info">
       <h2 class="title" id="title">Nothing playing</h2>
-      <p class="artist" id="artist">Pick a device or a playlist to start.</p>
-      <p class="album" id="album">&nbsp;</p>
+      <div class="meta">
+        <div class="meta-text">
+          <p class="artist" id="artist">Pick a device or a playlist to start.</p>
+          <p class="album" id="album">&nbsp;</p>
+        </div>
+        <button class="like hidden" id="btn-like" aria-label="Save to Liked Songs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" id="like-svg"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+      </div>
 
       <div class="progress">
         <div class="bar">
@@ -454,9 +464,6 @@ body.lyrics-on .title { font-size: 40px; }
       </div>
 
       <div class="lower">
-        <button class="like hidden" id="btn-like" aria-label="Save to Liked Songs">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" id="like-svg"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </button>
         <div class="vol">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
           <div class="bar">
