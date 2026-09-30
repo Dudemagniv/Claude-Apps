@@ -1008,9 +1008,9 @@ body.lyrics-on .title { font-size: 40px; }
     r.style.width = w + 'px';
     r.style.left = Math.max(16, Math.min(Math.round(box.left), window.innerWidth - w - 16)) + 'px';
     show(r, true); resultsNote('Searching\u2026');
-    api('GET', '/search?type=track&limit=10&q=' + encodeURIComponent(q)).then(function (res) {
+    api('GET', '/search?type=track&limit=10&market=from_token&q=' + encodeURIComponent(q)).then(function (res) {
       if (seq !== searchSeq) return;
-      var items = (res && res.tracks && res.tracks.items) || [];
+      var items = ((res && res.tracks && res.tracks.items) || []).filter(function (t) { return t && t.is_playable !== false; });
       r.innerHTML = '';
       if (!items.length) { resultsNote('Nothing found for \u201c' + q + '\u201d.'); return; }
       items.forEach(function (t) {
@@ -1028,7 +1028,7 @@ body.lyrics-on .title { font-size: 40px; }
     hideResults(); $('q').value = ''; $('q').blur(); toast('Playing ' + t.name);
     st.lockUntil = Date.now() + 900;
     var play = function (withDevice) {
-      return api('PUT', '/me/player/play' + (withDevice && devId ? '?device_id=' + devId : ''), { uris: [t.uri] });
+      return api('PUT', '/me/player/play' + (withDevice && devId ? '?device_id=' + devId : ''), { uris: [t.uri || ('spotify:track:' + t.id)] });
     };
     play(true).catch(function (e) {
       // the device may be idle: wake it with a transfer, then try once more
@@ -1040,7 +1040,17 @@ body.lyrics-on .title { font-size: 40px; }
       throw e;
     }).then(function () {
       setTimeout(function () { st.lockUntil = 0; poll(); }, 900);
+      setTimeout(function () { verifyPlay(t); }, 2200);
     }).catch(function (e) { st.lockUntil = 0; handleError(e); poll(); });
+  }
+  // Spotify can accept a play command and still not play it; say why instead of failing silently
+  function verifyPlay(t) {
+    api('GET', '/me/player?additional_types=episode').then(function (p) {
+      if (p && p.item && p.item.id === t.id && p.is_playing) return;
+      var why = !p ? 'no active device' : (!p.item ? 'the device stopped' : (p.item.id !== t.id ? 'it is still on another song' : 'it paused'));
+      var dis = p && p.actions && p.actions.disallows ? Object.keys(p.actions.disallows).join(', ') : '';
+      toast('Spotify didn\u2019t start \u201c' + t.name + '\u201d (' + why + (dis ? '; blocked: ' + dis : '') + ')');
+    }).catch(function () {});
   }
 
   function loadTab() {
