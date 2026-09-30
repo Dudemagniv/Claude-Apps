@@ -320,6 +320,7 @@ body.lyrics-on .ctl { width: 64px; height: 64px; }
 body.lyrics-on .ctl.play { width: 96px; height: 96px; }
 body.lyrics-on .title { font-size: 40px; }
 .ly-inner { padding: 0; }
+.lyrics::-webkit-scrollbar, .list::-webkit-scrollbar, .results::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .ly-line { font-family: var(--title); font-weight: 600; font-size: 48px; line-height: 1.15; margin: 0 0 24px; color: var(--ink-3);
   -webkit-transition: color 0.4s ease; transition: color 0.4s ease; }
 .ly-line.tap:active { color: var(--ink); }
@@ -1102,6 +1103,11 @@ body.lyrics-on .title { font-size: 40px; }
       .then(function (r) { return (r && r.tracks && r.tracks.items) || []; })
       .catch(function () { return []; });
   }
+  // "Even Flow", "Even Flow - Remastered 2009" and "Even Flow (Live)" are one song
+  function baseName(n) {
+    return String(n || '').toLowerCase().replace(/\(.*?\)|\[.*?\]/g, '').replace(/\s+-\s+.*$/, '')
+      .replace(/[^a-z0-9\u00c0-\uffff ]+/g, '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+  }
   function buildRadio(t) {
     var artist = t.artists && t.artists[0];
     var own = t.uri || ('spotify:track:' + t.id);
@@ -1116,12 +1122,14 @@ body.lyrics-on .title { font-size: 40px; }
       if (jobs.length < 2) jobs.push(trackSearch(artist.name, 10));
       return Promise.all(jobs);
     }).then(function (groups) {
-      var seen = {}; seen[t.id] = true;
+      var seen = {}, names = {}; seen[t.id] = true; names[baseName(t.name)] = true;
       var pick = function (list, max) {
         var out = [];
         shuffle(list.slice()).forEach(function (x) {
           if (!x || !x.id || seen[x.id] || x.is_playable === false || out.length >= max) return;
-          seen[x.id] = true; out.push(x.uri || ('spotify:track:' + x.id));
+          var nm = baseName(x.name);
+          if (nm && names[nm]) return;
+          seen[x.id] = true; names[nm] = true; out.push(x.uri || ('spotify:track:' + x.id));
         });
         return out;
       };
@@ -1197,8 +1205,8 @@ body.lyrics-on .title { font-size: 40px; }
         }
         if (q.queue && q.queue.length) {
           l.appendChild(head('Up next'));
-          q.queue.slice(0, 25).forEach(function (it) {
-            l.appendChild(row({ t1: it.name, t2: describe(it), img: artOf(it) }));
+          q.queue.slice(0, 25).forEach(function (it, idx) {
+            l.appendChild(row({ t1: it.name, t2: describe(it), img: artOf(it), onTap: function () { jumpToQueued(idx + 1, it.name); } }));
           });
         }
       }).catch(function (e) { if (currentTab === tab) note('Couldn\u2019t load the queue.'); handleError(e); });
@@ -1237,6 +1245,19 @@ body.lyrics-on .title { font-size: 40px; }
         });
       }).catch(function (e) { if (currentTab === tab) note('Couldn\u2019t load devices.'); handleError(e); });
     }
+  }
+
+  // the API can't play a queue entry directly, so skip forward to it
+  function jumpToQueued(skips, name) {
+    closePanel(); toast('Playing ' + name);
+    st.lockUntil = Date.now() + skips * 500 + 1200;
+    var i = 0;
+    (function step() {
+      if (i >= skips) { setTimeout(function () { st.lockUntil = 0; poll(); }, 900); return; }
+      i++;
+      api('POST', '/me/player/next').then(function () { setTimeout(step, 300); })
+        .catch(function (e) { st.lockUntil = 0; handleError(e); poll(); });
+    })();
   }
 
   function playContext(uri, name) {
