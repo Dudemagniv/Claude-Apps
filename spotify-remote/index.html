@@ -95,18 +95,18 @@ svg { display: block; }
 }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  height: 44px; flex-shrink: 0;
+  height: 56px; flex-shrink: 0;
 }
-.clock { font-family: var(--title); font-size: 30px; font-weight: 600; letter-spacing: 0.5px; }
+.clock { font-family: var(--title); font-size: 38px; font-weight: 600; letter-spacing: 0.5px; }
 .top-actions { display: flex; align-items: center; }
 .chip {
-  display: flex; align-items: center; height: 40px; padding: 0 14px 0 10px;
-  border-radius: 20px; background: var(--shade); font-size: 15px; font-weight: 500;
-  margin-left: 10px; max-width: 280px;
+  display: flex; align-items: center; height: 56px; padding: 0 20px 0 16px;
+  border-radius: 28px; background: var(--shade); font-size: 18px; font-weight: 500;
+  margin-left: 12px; max-width: 320px;
 }
-.chip svg { width: 20px; height: 20px; margin-right: 8px; flex-shrink: 0; }
+.chip svg { width: 28px; height: 28px; margin-right: 10px; flex-shrink: 0; }
 .chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chip.icon-only { padding: 0 10px; }
+.chip.icon-only { padding: 0; width: 56px; justify-content: center; }
 .chip.icon-only svg { margin-right: 0; }
 
 .stage {
@@ -147,20 +147,20 @@ svg { display: block; }
 }
 
 /* sliders: a filled div under a transparent native range, so the fill works in old WebKit */
-.bar { position: relative; height: 32px; }
+.bar { position: relative; height: 48px; }
 .bar .rail, .bar .fill {
-  position: absolute; left: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px;
+  position: absolute; left: 0; top: 50%; height: 8px; margin-top: -4px; border-radius: 4px;
   pointer-events: none;
 }
 .bar .rail { right: 0; background: var(--line); }
 .bar .fill { width: 0; background: var(--ink); }
 .bar input {
-  position: absolute; left: -11px; top: 0; height: 32px; width: calc(100% + 22px);
+  position: absolute; left: -16px; top: 0; height: 48px; width: calc(100% + 32px);
   margin: 0; background: transparent; -webkit-appearance: none;
 }
-.bar input::-webkit-slider-runnable-track { height: 32px; background: transparent; }
+.bar input::-webkit-slider-runnable-track { height: 48px; background: transparent; }
 .bar input::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 22px; height: 22px; margin-top: 5px;
+  -webkit-appearance: none; width: 32px; height: 32px; margin-top: 8px;
   border-radius: 50%; background: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.35);
 }
 .bar input:focus { outline: none; }
@@ -169,33 +169,33 @@ svg { display: block; }
 .progress { margin-top: 32px; }
 .times {
   display: flex; justify-content: space-between;
-  font-size: 14px; font-weight: 500; color: var(--ink-2); margin-top: 2px;
+  font-size: 17px; font-weight: 500; color: var(--ink-2); margin-top: 0;
   font-variant-numeric: tabular-nums;
 }
 .controls {
   display: flex; align-items: center; justify-content: space-between;
-  margin-top: 20px; max-width: 460px;
+  margin-top: 20px; max-width: 560px;
 }
-.ctl { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-.ctl svg { width: 34px; height: 34px; }
-.ctl.small svg { width: 26px; height: 26px; }
+.ctl { width: 76px; height: 76px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.ctl svg { width: 44px; height: 44px; }
+.ctl.small svg { width: 34px; height: 34px; }
 .ctl.small { color: var(--ink-3); position: relative; }
 .ctl.small.on { color: var(--accent); }
 .ctl.small.on:after {
   content: ""; position: absolute; bottom: 4px; left: 50%; width: 5px; height: 5px;
   margin-left: -2.5px; border-radius: 50%; background: var(--accent);
 }
-.ctl.play { width: 88px; height: 88px; background: var(--ink); color: #1b1422; }
-.ctl.play svg { width: 40px; height: 40px; }
+.ctl.play { width: 112px; height: 112px; background: var(--ink); color: #1b1422; }
+.ctl.play svg { width: 52px; height: 52px; }
 .ctl:active { opacity: 0.6; }
 .ctl.play:active { -webkit-transform: scale(0.94); transform: scale(0.94); opacity: 1; }
 
-.lower { display: flex; align-items: center; margin-top: 24px; max-width: 460px; }
-.like { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-right: 18px; margin-left: -12px; color: var(--ink-2); }
-.like svg { width: 28px; height: 28px; }
+.lower { display: flex; align-items: center; margin-top: 24px; max-width: 560px; }
+.like { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; margin-right: 18px; margin-left: -12px; color: var(--ink-2); }
+.like svg { width: 38px; height: 38px; }
 .like.on { color: var(--accent); }
 .vol { flex: 1; display: flex; align-items: center; }
-.vol > svg { width: 24px; height: 24px; color: var(--ink-2); margin-right: 14px; flex-shrink: 0; }
+.vol > svg { width: 32px; height: 32px; color: var(--ink-2); margin-right: 14px; flex-shrink: 0; }
 .vol .bar { flex: 1; }
 
 /* ---------- side panel ---------- */
@@ -205,7 +205,7 @@ svg { display: block; }
 }
 #scrim.open { opacity: 1; pointer-events: auto; }
 #panel {
-  position: fixed; top: 0; right: 0; bottom: 0; width: 400px; max-width: 88vw;
+  position: fixed; top: 0; right: 0; bottom: 0; width: 460px; max-width: 92vw;
   background: #1c1822; color: var(--ink);
   -webkit-transform: translate3d(100%,0,0); transform: translate3d(100%,0,0);
   transition: -webkit-transform 0.28s ease; transition: transform 0.28s ease;
@@ -216,25 +216,25 @@ svg { display: block; }
 #panel.open { -webkit-transform: translate3d(0,0,0); transform: translate3d(0,0,0); }
 .tabs { display: flex; padding: 16px 16px 0; border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .tab {
-  flex: 1; padding: 12px 0 14px; font-size: 17px; font-weight: 600; color: var(--ink-3);
+  flex: 1; padding: 18px 0 20px; font-size: 20px; font-weight: 600; color: var(--ink-3);
   border-bottom: 3px solid transparent; margin-bottom: -1px;
 }
 .tab.on { color: var(--ink); border-bottom-color: var(--accent); }
 .list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 0; }
 .row {
   display: flex; align-items: center; width: 100%; text-align: left;
-  padding: 10px 20px; min-height: 64px;
+  padding: 12px 20px; min-height: 80px;
 }
 .row:active { background: rgba(255,255,255,0.06); }
 .row img, .row .ph {
-  width: 48px; height: 48px; border-radius: 4px; object-fit: cover; flex-shrink: 0;
+  width: 60px; height: 60px; border-radius: 4px; object-fit: cover; flex-shrink: 0;
   margin-right: 14px; background: rgba(255,255,255,0.08);
 }
 .row .ph { display: flex; align-items: center; justify-content: center; color: var(--ink-3); }
 .row .ph svg { width: 24px; height: 24px; }
 .row .txt { min-width: 0; flex: 1; }
-.row .t1 { font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row .t2 { font-size: 14px; color: var(--ink-3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .t1 { font-size: 19px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .t2 { font-size: 16px; color: var(--ink-3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row.active .t1 { color: var(--accent); }
 .row.static:active { background: none; }
 .list-note { padding: 18px 20px; font-size: 15px; line-height: 1.45; color: var(--ink-3); }
@@ -244,7 +244,7 @@ svg { display: block; }
   padding: 8px 20px calc(8px + env(safe-area-inset-bottom));
   display: flex; justify-content: space-between;
 }
-.panel-foot button { font-size: 15px; color: var(--ink-3); padding: 10px 0; }
+.panel-foot button { font-size: 18px; color: var(--ink-3); padding: 16px 0; }
 .token-box {
   margin: 12px 20px; font-size: 13px; word-break: break-all; background: rgba(255,255,255,0.06);
   border-radius: 8px; padding: 12px; -webkit-user-select: all; user-select: all; color: var(--ink-2);
@@ -260,6 +260,29 @@ svg { display: block; }
 }
 #toast.show { opacity: 1; -webkit-transform: translate(-50%, 0); transform: translate(-50%, 0); }
 
+/* ---------- lyrics ---------- */
+.lyrics { display: none; position: relative; overflow: hidden; }
+body.lyrics-on .art-wrap { display: none; }
+body.lyrics-on .lyrics { display: block; flex: 1.5; min-width: 0; height: 100%; margin-right: 40px;
+  -webkit-mask-image: -webkit-linear-gradient(top, transparent 0, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%); }
+body.lyrics-on .info { flex: 1; max-width: 480px; }
+body.lyrics-on .title { font-size: 40px; }
+.ly-inner { padding: 40vh 0; -webkit-transition: -webkit-transform 0.5s ease; transition: transform 0.5s ease; }
+.ly-line { font-family: var(--title); font-weight: 600; font-size: 48px; line-height: 1.15; margin: 0 0 24px; color: var(--ink-3);
+  -webkit-transition: color 0.4s ease; transition: color 0.4s ease; }
+.ly-line.now { color: var(--ink); }
+.ly-line.past { color: var(--ink-2); }
+.lyrics.plain { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.lyrics.plain .ly-line { color: var(--ink); font-size: 34px; margin-bottom: 14px; }
+.ly-msg { font-size: 22px; color: var(--ink-2); padding: 40vh 0; }
+.chip.on { background: var(--ink); color: #1b1422; }
+
+/* ---------- distraction-free mode ---------- */
+body.full .top-actions, body.full .controls, body.full .lower { display: none; }
+body.full .art-wrap { max-width: calc(100vh - 110px); max-height: calc(100vh - 110px); }
+body.full .progress { margin-top: 24px; }
+
 /* ---------- portrait & small screens ---------- */
 @media (orientation: portrait) {
   #app { padding-left: 32px; padding-right: 32px; }
@@ -272,12 +295,17 @@ svg { display: block; }
   .info { width: 100%; max-width: 560px; flex: none; }
   .controls, .lower { max-width: none; }
   .title { font-size: 46px; }
+  body.lyrics-on .lyrics { flex: none; width: 100%; height: 38vh; margin: 0 0 20px; }
+  body.lyrics-on .info { max-width: 620px; }
+  body.lyrics-on .title { font-size: 34px; }
+  .ly-line { font-size: 36px; }
 }
 @media (max-width: 500px) {
   #app { padding-left: 20px; padding-right: 20px; }
   .title { font-size: 34px; }
   .artist { font-size: 18px; }
-  .ctl.play { width: 72px; height: 72px; }
+  .ctl { width: 60px; height: 60px; }
+  .ctl.play { width: 88px; height: 88px; }
 }
 @media (prefers-reduced-motion: reduce) {
   body, #panel, #scrim, #toast, .art-wrap img { transition: none; }
@@ -319,6 +347,12 @@ svg { display: block; }
   <div class="topbar">
     <div class="clock" id="clock">--:--</div>
     <div class="top-actions">
+      <button class="chip icon-only" id="btn-lyrics" aria-label="Lyrics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="13" y2="17"/></svg>
+      </button>
+      <button class="chip icon-only" id="btn-full" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 9 4 4 9 4"/><polyline points="20 9 20 4 15 4"/><polyline points="4 15 4 20 9 20"/><polyline points="20 15 20 20 15 20"/></svg>
+      </button>
       <button class="chip" id="btn-device" aria-label="Choose device">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><line x1="12" y1="6" x2="12.01" y2="6"/></svg>
         <span id="device-name">No device</span>
@@ -336,6 +370,8 @@ svg { display: block; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
       </div>
     </div>
+
+    <div class="lyrics" id="lyrics"><div class="ly-inner" id="ly-inner"></div></div>
 
     <div class="info">
       <h2 class="title" id="title">Nothing playing</h2>
@@ -412,7 +448,7 @@ svg { display: block; }
     'playlist-read-private', 'playlist-read-collaborative',
     'user-library-read', 'user-library-modify'
   ].join(' ');
-  var KEY = { cid: 'sr_client_id', tok: 'sr_tokens', ver: 'sr_verifier', state: 'sr_state' };
+  var KEY = { mode: 'sr_lyrics', cid: 'sr_client_id', tok: 'sr_tokens', ver: 'sr_verifier', state: 'sr_state' };
   var REDIRECT = location.origin + location.pathname;
   var DEFAULT_BG = '#3a2c4a';
 
@@ -659,7 +695,91 @@ svg { display: block; }
     $('vol').disabled = !volOk;
     if (volOk && Date.now() > st.volBusyUntil) { $('vol').value = dev.volume_percent; setFill($('vol'), $('vol-fill')); }
 
+    if (item) loadLyrics(item);
     tick();
+  }
+
+  // ---------- lyrics (LRCLIB: free, no key) ----------
+  var ly = { id: '', lines: null, synced: false, active: -1, els: [] };
+  function setInnerY(y) {
+    var inner = $('ly-inner');
+    inner.style.webkitTransform = 'translate3d(0,' + y + 'px,0)';
+    inner.style.transform = 'translate3d(0,' + y + 'px,0)';
+  }
+  function lyMsg(text) {
+    var inner = $('ly-inner'); inner.innerHTML = '';
+    var d = document.createElement('div'); d.className = 'ly-msg'; d.textContent = text; inner.appendChild(d);
+    $('lyrics').classList.remove('plain'); inner.style.padding = '';
+    ly.lines = null; ly.els = []; ly.active = -1; setInnerY(0);
+  }
+  function parseLrc(txt) {
+    var out = [];
+    txt.split('\n').forEach(function (ln) {
+      var m = /^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$/.exec(ln);
+      if (m) out.push({ t: (+m[1]) * 60000 + Math.round(parseFloat(m[2]) * 1000), s: m[3] });
+    });
+    return out;
+  }
+  function showLyrics(res) {
+    var inner = $('ly-inner'), pane = $('lyrics'); inner.innerHTML = ''; ly.els = []; ly.active = -1;
+    var synced = res.syncedLyrics ? parseLrc(res.syncedLyrics) : [];
+    var lines;
+    if (synced.length) { lines = synced; ly.synced = true; }
+    else if (res.plainLyrics) { lines = res.plainLyrics.split('\n').map(function (s) { return { t: 0, s: s }; }); ly.synced = false; }
+    else { lyMsg(res.instrumental ? 'Instrumental' : 'No lyrics found for this song.'); return; }
+    pane.classList[ly.synced ? 'remove' : 'add']('plain');
+    inner.style.padding = ly.synced ? '' : '0 0 40px';
+    lines.forEach(function (l) {
+      var d = document.createElement('div'); d.className = 'ly-line'; d.textContent = l.s || '\u266a'; inner.appendChild(d); ly.els.push(d);
+    });
+    ly.lines = lines; pane.scrollTop = 0; setInnerY(0);
+  }
+  function loadLyrics(item) {
+    if (!document.body.classList.contains('lyrics-on') || item.type === 'episode' || !item.id) return;
+    if (ly.id === item.id) return;
+    ly.id = item.id; lyMsg('Loading lyrics\u2026');
+    var id = item.id, artist = item.artists && item.artists[0] ? item.artists[0].name : '';
+    var base = 'https://lrclib.net/api/';
+    var q = 'artist_name=' + encodeURIComponent(artist) + '&track_name=' + encodeURIComponent(item.name) +
+      '&album_name=' + encodeURIComponent((item.album && item.album.name) || '') + '&duration=' + Math.round(item.duration_ms / 1000);
+    fetch(base + 'get?' + q).then(function (r) {
+      if (r.ok) return r.json();
+      return fetch(base + 'search?artist_name=' + encodeURIComponent(artist) + '&track_name=' + encodeURIComponent(item.name))
+        .then(function (r2) { return r2.ok ? r2.json() : []; })
+        .then(function (arr) {
+          for (var i = 0; i < arr.length; i++) if (arr[i].syncedLyrics) return arr[i];
+          return arr[0] || {};
+        });
+    }).then(function (res) { if (ly.id === id) showLyrics(res || {}); })
+      .catch(function () { if (ly.id === id) { ly.id = ''; lyMsg('Couldn\u2019t load lyrics.'); } });
+  }
+  function syncLyrics(pos) {
+    if (!ly.lines || !ly.synced) return;
+    var i = -1, L = ly.lines, target = pos + 250;
+    for (var k = 0; k < L.length; k++) { if (L[k].t <= target) i = k; else break; }
+    if (i === ly.active) return;
+    ly.active = i;
+    for (var j = 0; j < ly.els.length; j++) ly.els[j].className = 'ly-line' + (j === i ? ' now' : (j < i ? ' past' : ''));
+    if (i < 0) return;
+    var el = ly.els[i];
+    setInnerY($('lyrics').clientHeight / 2 - (el.offsetTop + el.offsetHeight / 2));
+  }
+  function setLyricsMode(on) {
+    document.body.classList[on ? 'add' : 'remove']('lyrics-on');
+    $('btn-lyrics').classList[on ? 'add' : 'remove']('on');
+    set(KEY.mode, on ? '1' : '0');
+    if (on && st.p && st.p.item) { ly.id = ''; loadLyrics(st.p.item); }
+  }
+
+  // ---------- fullscreen / distraction-free ----------
+  function setFull(on) {
+    document.body.classList[on ? 'add' : 'remove']('full');
+    var d = document, de = d.documentElement;
+    try {
+      if (on) { var rq = de.requestFullscreen || de.webkitRequestFullscreen; if (rq) rq.call(de); }
+      else if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
+    } catch (e) {}
+    if (on) toast('Tap the screen to bring the controls back.');
   }
 
   function tick() {
@@ -669,6 +789,7 @@ svg { display: block; }
     $('seek').value = Math.round(1000 * pos / dur);
     setFill($('seek'), $('seek-fill'));
     $('t-pos').textContent = fmt(pos);
+    syncLyrics(pos);
     if (p.is_playing && pos >= dur && !st.endPoll) { st.endPoll = true; setTimeout(function () { st.endPoll = false; poll(); }, 800); }
   }
 
@@ -942,6 +1063,11 @@ svg { display: block; }
     $('btn-repeat').addEventListener('click', cycleRepeat);
     $('btn-like').addEventListener('click', toggleLike);
     $('btn-device').addEventListener('click', function () { openPanel('devices'); });
+    $('btn-lyrics').addEventListener('click', function () { setLyricsMode(!document.body.classList.contains('lyrics-on')); });
+    $('btn-full').addEventListener('click', function (e) { e.stopPropagation(); setFull(true); });
+    $('app').addEventListener('click', function (e) {
+      if (document.body.classList.contains('full') && !(e.target.closest && e.target.closest('.bar'))) setFull(false);
+    });
     $('btn-queue').addEventListener('click', function () { openPanel('queue'); });
     $('scrim').addEventListener('click', closePanel);
     $('btn-logout').addEventListener('click', function () { signOut(); });
@@ -974,11 +1100,12 @@ svg { display: block; }
 
     // stop iOS from rubber-banding the whole page, but keep lists scrollable
     document.addEventListener('touchmove', function (e) {
-      if (!e.target.closest || !e.target.closest('.list, #setup, .bar')) e.preventDefault();
+      if (!e.target.closest || !e.target.closest('.list, #setup, .bar, .lyrics.plain')) e.preventDefault();
     }, { passive: false });
   }
 
   bind();
+  if (get(KEY.mode) === '1') setLyricsMode(true);
   handleRedirect().then(function () {
     if (getTokens()) startApp(); else showSetup();
   });
