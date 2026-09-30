@@ -123,6 +123,12 @@ svg { display: block; }
 .searchbox input:focus { outline: none; }
 .searchbox input::-webkit-input-placeholder { color: var(--ink-3); }
 .searchbox input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.res { display: flex; align-items: center; }
+.res .row { flex: 1; min-width: 0; }
+.qadd { flex-shrink: 0; width: 52px; height: 52px; margin-right: 10px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+.qadd svg { width: 28px; height: 28px; }
+.qadd:active { background: rgba(255,255,255,0.12); }
+.qadd.done { color: var(--accent); }
 .results {
   position: fixed; top: 84px; left: 40px; width: 460px; max-width: calc(100vw - 32px);
   max-height: 62vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -1028,7 +1034,12 @@ body.lyrics-on .title { font-size: 40px; }
       if (!items.length) { resultsNote('Nothing found for \u201c' + q + '\u201d.'); return; }
       items.forEach(function (t) {
         if (!t) return;
-        r.appendChild(row({ t1: t.name, t2: describe(t), img: artOf(t), onTap: function () { playTrack(t); } }));
+        var wrap = document.createElement('div'); wrap.className = 'res';
+        wrap.appendChild(row({ t1: t.name, t2: describe(t), img: artOf(t), onTap: function () { playTrack(t); } }));
+        var add = document.createElement('button'); add.className = 'qadd'; add.setAttribute('aria-label', 'Add to queue');
+        add.innerHTML = ICON_PLUS;
+        add.addEventListener('click', function () { addToQueue(t, add); });
+        wrap.appendChild(add); r.appendChild(wrap);
       });
     }).catch(function (e) {
       if (seq !== searchSeq) return;
@@ -1036,39 +1047,102 @@ body.lyrics-on .title { font-size: 40px; }
       if (e && e.status === 401) handleError(e);
     });
   }
+  var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 10 17 19 7"/></svg>';
+  function addToQueue(t, btn) {
+    var devId = st.p && st.p.device && st.p.device.id;
+    var uri = t.uri || ('spotify:track:' + t.id);
+    api('POST', '/me/player/queue?uri=' + encodeURIComponent(uri) + (devId ? '&device_id=' + devId : '')).then(function () {
+      btn.classList.add('done'); btn.innerHTML = ICON_CHECK;
+      toast('Added “' + t.name + '” to the queue');
+      setTimeout(function () { nx.id = ''; if (st.p && st.p.item) loadNext(st.p.item); }, 1200);
+    }).catch(handleError);
+  }
+
+  // ----- song radio -----
+  // Spotify's own "song radio" isn't available to apps, so build one: the song, then songs by the
+  // same artist and in the artist's genres, shuffled.
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; }
+    return a;
+  }
+  function trackSearch(q, offset) {
+    return api('GET', '/search?type=track&limit=10&offset=' + (offset || 0) + '&q=' + encodeURIComponent(q))
+      .then(function (r) { return (r && r.tracks && r.tracks.items) || []; })
+      .catch(function () { return []; });
+  }
+  function buildRadio(t) {
+    var artist = t.artists && t.artists[0];
+    var own = t.uri || ('spotify:track:' + t.id);
+    if (!artist) return Promise.resolve([own]);
+    var genresReq = artist.id
+      ? api('GET', '/artists/' + artist.id).then(function (a) { return (a && a.genres) || []; }).catch(function () { return []; })
+      : Promise.resolve([]);
+    return genresReq.then(function (genres) {
+      shuffle(genres);
+      var jobs = [trackSearch('artist:"' + artist.name + '"')];
+      genres.slice(0, 3).forEach(function (g) { jobs.push(trackSearch('genre:"' + g + '"', Math.floor(Math.random() * 40))); });
+      if (jobs.length < 2) jobs.push(trackSearch(artist.name, 10));
+      return Promise.all(jobs);
+    }).then(function (groups) {
+      var seen = {}; seen[t.id] = true;
+      var pick = function (list, max) {
+        var out = [];
+        shuffle(list.slice()).forEach(function (x) {
+          if (!x || !x.id || seen[x.id] || x.is_playable === false || out.length >= max) return;
+          seen[x.id] = true; out.push(x.uri || ('spotify:track:' + x.id));
+        });
+        return out;
+      };
+      var rest = pick(groups[0], 5);
+      for (var i = 1; i < groups.length; i++) rest = rest.concat(pick(groups[i], 8));
+      return [own].concat(shuffle(rest));
+    }).catch(function () { return [own]; });
+  }
+
   function playTrack(t) {
     var devId = st.p && st.p.device && st.p.device.id;
-    hideResults(); $('q').value = ''; $('q').blur(); toast('Playing ' + t.name);
-    st.lockUntil = Date.now() + 900;
-    var play = function (withDevice) {
-      return api('PUT', '/me/player/play' + (withDevice && devId ? '?device_id=' + devId : ''), { uris: [t.uri || ('spotify:track:' + t.id)] });
-    };
-    play(true).catch(function (e) {
-      // the device may be idle: wake it with a transfer, then try once more
-      if (devId && (e.status === 404 || e.status === 502 || e.status === 500)) {
-        return api('PUT', '/me/player', { device_ids: [devId], play: false }).then(function () {
-          return new Promise(function (ok) { setTimeout(ok, 700); });
-        }).then(function () { return play(true); });
-      }
-      throw e;
-    }).then(function () {
-      setTimeout(function () { st.lockUntil = 0; poll(); }, 900);
-      setTimeout(function () { verifyPlay(t, 0); }, 2200);
+    var prevId = st.p && st.p.item && st.p.item.id;
+    hideResults(); $('q').value = ''; $('q').blur(); toast('Starting radio for ' + t.name + '\u2026');
+    st.lockUntil = Date.now() + 2000;
+    buildRadio(t).then(function (uris) {
+      var play = function (withDevice) {
+        return api('PUT', '/me/player/play' + (withDevice && devId ? '?device_id=' + devId : ''), { uris: uris });
+      };
+      return play(true).catch(function (e) {
+        // the device may be idle: wake it with a transfer, then try once more
+        if (devId && (e.status === 404 || e.status === 502 || e.status === 500)) {
+          return api('PUT', '/me/player', { device_ids: [devId], play: false }).then(function () {
+            return new Promise(function (ok) { setTimeout(ok, 700); });
+          }).then(function () { return play(true); });
+        }
+        throw e;
+      }).then(function () {
+        st.lockUntil = 0;
+        setTimeout(poll, 1200);
+        setTimeout(function () { verifyPlay(t, 0, prevId, uris, devId); }, 4000);
+      });
     }).catch(function (e) { st.lockUntil = 0; handleError(e); poll(); });
   }
-  // Spotify can accept a play command and still not play it: check, retry from the album, then explain
-  function verifyPlay(t, attempt) {
+
+  // Spotify can accept a play command and still not play it. Spotify's state also lags, so wait a
+  // few seconds; if the song still isn't playing, retry in simpler ways, and finally say why.
+  function verifyPlay(t, attempt, prevId, uris, devId) {
     api('GET', '/me/player?additional_types=episode').then(function (p) {
-      if (p && p.item && p.item.id === t.id && p.is_playing) return;
-      var devId = (p && p.device && p.device.id) || (st.p && st.p.device && st.p.device.id);
-      if (!attempt && t.album && t.album.uri) {
-        st.lockUntil = Date.now() + 900;
-        api('PUT', '/me/player/play' + (devId ? '?device_id=' + devId : ''),
-          { context_uri: t.album.uri, offset: { uri: t.uri || ('spotify:track:' + t.id) } })
-          .then(function () {
-            setTimeout(function () { st.lockUntil = 0; poll(); }, 900);
-            setTimeout(function () { verifyPlay(t, 1); }, 2200);
-          }).catch(function (e) { st.lockUntil = 0; toast('Retry failed: ' + (e.message || e.status || 'unknown error'), 10000); });
+      if (p && p.item && p.is_playing && (p.item.id === t.id || p.item.id !== prevId)) return;
+      var again = function (path, body, msg) {
+        st.lockUntil = Date.now() + 2000;
+        api('PUT', path, body).then(function () {
+          st.lockUntil = 0; setTimeout(poll, 1200);
+          if (msg) toast(msg, 5000);
+          setTimeout(function () { verifyPlay(t, attempt + 1, prevId, uris, devId); }, 4000);
+        }).catch(function (e) { st.lockUntil = 0; toast('Retry failed: ' + (e.message || e.status || 'unknown error'), 10000); });
+      };
+      if (attempt === 0) { again('/me/player/play', { uris: uris }); return; }
+      if (attempt === 1 && t.album && t.album.uri) {
+        again('/me/player/play' + (devId ? '?device_id=' + devId : ''),
+          { context_uri: t.album.uri, offset: { uri: t.uri || ('spotify:track:' + t.id) } },
+          'Radio wouldn\u2019t start, playing the album instead.');
         return;
       }
       var why = !p ? 'no active device' : (!p.item ? 'the device stopped' : (p.item.id !== t.id ? 'it is still on another song' : 'it paused'));
