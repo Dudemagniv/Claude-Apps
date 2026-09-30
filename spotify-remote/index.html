@@ -323,11 +323,6 @@ body.lyrics-on .title { font-size: 40px; }
 .lyrics::-webkit-scrollbar, .list::-webkit-scrollbar, .results::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .ly-line { font-family: var(--title); font-weight: 600; font-size: 48px; line-height: 1.15; margin: 0 0 24px; color: var(--ink-3);
   -webkit-transition: color 0.4s ease; transition: color 0.4s ease; }
-.sync { display: none; align-items: center; margin-top: 10px; font-size: 15px; color: var(--ink-3); }
-body.lyrics-on .sync { display: flex; }
-.syncbtn { width: 44px; height: 44px; margin-left: 8px; border-radius: 50%; background: var(--shade); font-size: 26px; line-height: 44px; text-align: center; color: var(--ink); }
-.syncbtn:active { opacity: 0.6; }
-.syncval { min-width: 52px; margin-left: 8px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .ly-line.tap:active { color: var(--ink); }
 .ly-line.now { color: var(--ink); }
 .ly-line.past { color: var(--ink-2); }
@@ -451,13 +446,6 @@ body.lyrics-on .sync { display: flex; }
         </button>
       </div>
 
-      <div class="sync">
-        <span>Lyrics timing</span>
-        <button class="syncbtn" id="sync-minus" aria-label="Lyrics earlier">&minus;</button>
-        <span class="syncval" id="sync-val">1.5s</span>
-        <button class="syncbtn" id="sync-plus" aria-label="Lyrics later">+</button>
-      </div>
-
       <div class="progress">
         <div class="bar">
           <div class="rail"></div><div class="fill" id="seek-fill"></div>
@@ -529,7 +517,7 @@ body.lyrics-on .sync { display: flex; }
     'playlist-read-private', 'playlist-read-collaborative',
     'user-library-read', 'user-library-modify'
   ].join(' ');
-  var KEY = { lead: 'sr_lead', mode: 'sr_lyrics', cid: 'sr_client_id', tok: 'sr_tokens', ver: 'sr_verifier', state: 'sr_state' };
+  var KEY = { mode: 'sr_lyrics', cid: 'sr_client_id', tok: 'sr_tokens', ver: 'sr_verifier', state: 'sr_state' };
   var REDIRECT = location.origin + location.pathname;
   var DEFAULT_BG = '#3a2c4a';
 
@@ -897,11 +885,6 @@ body.lyrics-on .sync { display: flex; }
     if (i < 0) return;
     if (now < ly.userUntil) ly.dirty = true; else centerLine(first);
   }
-  function paintLead() { $('sync-val').textContent = (ly.lead / 1000).toFixed(2).replace(/0$/, '') + 's'; }
-  function nudgeLead(d) {
-    ly.lead = Math.max(0, Math.min(6000, ly.lead + d)); set(KEY.lead, String(ly.lead)); paintLead();
-    ly.active = -1; // re-place the highlight with the new timing
-  }
   function setLyricsMode(on) {
     document.body.classList[on ? 'add' : 'remove']('lyrics-on');
     $('btn-lyrics').classList[on ? 'add' : 'remove']('on');
@@ -1111,9 +1094,31 @@ body.lyrics-on .sync { display: flex; }
     var uri = t.uri || ('spotify:track:' + t.id);
     api('POST', '/me/player/queue?uri=' + encodeURIComponent(uri) + (devId ? '&device_id=' + devId : '')).then(function () {
       btn.classList.add('done'); btn.innerHTML = ICON_CHECK;
-      toast('Added “' + t.name + '” to the queue');
-      setTimeout(function () { nx.id = ''; if (st.p && st.p.item) loadNext(st.p.item); }, 1200);
-    }).catch(handleError);
+      setTimeout(function () { confirmQueued(t, btn); }, 1500);
+    }).catch(function (e) {
+      if (e && e.status === 403) {
+        toast(isDj() ? 'The DJ doesn’t allow queuing songs. Tap the song to play it instead.' : 'Spotify refused to queue that: ' + (e.message || ''), 7000);
+        return;
+      }
+      handleError(e);
+    });
+  }
+  function isDj() { return !!(st.p && st.p.context && st.p.context.uri === DJ_URI); }
+  // Spotify can accept a queue request and then ignore it (the DJ does), so check the queue
+  function confirmQueued(t, btn) {
+    api('GET', '/me/player/queue').then(function (q) {
+      var list = (q && q.queue) || [];
+      for (var i = 0; i < list.length && i < 30; i++) {
+        if (list[i] && list[i].id === t.id) {
+          toast('Added “' + t.name + '” to the queue');
+          nx.id = ''; if (st.p && st.p.item) loadNext(st.p.item);
+          return;
+        }
+      }
+      btn.classList.remove('done'); btn.innerHTML = ICON_PLUS;
+      toast(isDj() ? 'The DJ ignored that. Songs can’t be queued while it plays, tap the song to play it instead.'
+                   : 'Spotify accepted it, but it isn’t in the queue.', 7000);
+    }).catch(function () { toast('Sent “' + t.name + '” to the queue (couldn’t confirm)'); });
   }
 
   // ----- song radio -----
@@ -1369,8 +1374,6 @@ body.lyrics-on .sync { display: flex; }
     ['touchstart', 'touchmove', 'wheel', 'mousedown'].forEach(function (ev) { lyPane.addEventListener(ev, userScroll); });
     lyPane.addEventListener('scroll', function () { if (!ly.prog) ly.userUntil = Date.now() + 3500; });
     window.addEventListener('resize', fitLyrics);
-    $('sync-minus').addEventListener('click', function () { nudgeLead(-250); });
-    $('sync-plus').addEventListener('click', function () { nudgeLead(250); });
     var unscroll = function () { window.scrollTo(0, 0); document.body.scrollTop = 0; document.documentElement.scrollTop = 0; };
     window.addEventListener('resize', unscroll); window.addEventListener('orientationchange', function () { setTimeout(unscroll, 300); });
     window.addEventListener('scroll', unscroll);
@@ -1415,9 +1418,6 @@ body.lyrics-on .sync { display: flex; }
   }
 
   bind();
-  var savedLead = parseInt(get(KEY.lead), 10);
-  if (!isNaN(savedLead)) ly.lead = Math.max(0, Math.min(6000, savedLead));
-  paintLead();
   if (get(KEY.mode) === '1') setLyricsMode(true);
   handleRedirect().then(function () {
     if (getTokens()) startApp(); else showSetup();
