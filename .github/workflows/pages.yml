@@ -1,5 +1,5 @@
 # Deploys selected app folders to GitHub Pages.
-# Site: https://dudemagniv.github.io/claude-apps/<folder>/
+# Site: https://dudemagniv.github.io/Claude-Apps/<folder>/
 # To publish another app on Pages, add its folder to PAGES_APPS below.
 name: Deploy to GitHub Pages
 
