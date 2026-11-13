@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PAGES_APPS: "chord-visualizer"
+  PAGES_APPS: "guitar-inversions"
 
 jobs:
   deploy:

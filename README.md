@@ -64,7 +64,7 @@ accordingly, e.g.:
 Some apps are also published on GitHub Pages by `.github/workflows/pages.yml`,
 on every push to `main`:
 
-- chord-visualizer → https://dudemagniv.github.io/Claude-Apps/chord-visualizer/
+- guitar-inversions → https://dudemagniv.github.io/Claude-Apps/guitar-inversions/
 
 To publish another app there, add its folder name to `PAGES_APPS` in the
 workflow. (One-time repo setting: Settings → Pages → Source: **GitHub Actions**.)
