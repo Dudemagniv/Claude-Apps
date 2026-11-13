@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chords & Triads Visualizer</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      color: #fbbf24;
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    label {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    select, button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    .fretboard-container {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+    .fretboard {
+      display: flex;
+      flex-direction: column;
+      min-width: 900px;
+      background: #2b1810;
+      border-radius: 4px;
+      direction: ltr;
+    }
+    .grid-row {
+      display: grid;
+      grid-template-columns: 100px 40px repeat(15, 1fr);
+      height: 40px;
+      align-items: center;
+    }
+    .fret-num {
+      text-align: center;
+      font-weight: bold;
+      color: #888;
+      font-size: 0.85rem;
+    }
+    .string-label {
+      background: #111;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      color: #ccc;
+      border-right: 2px solid #444;
+    }
+    .fret-cell {
+      position: relative;
+      height: 100%;
+      border-right: 2px solid #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .fret-cell.nut {
+      border-right: 6px solid #fef08a;
+      background: rgba(255,255,255,0.05);
+    }
+    .string-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      background: #aaa;
+      height: 2px;
+      z-index: 1;
+    }
+    .note {
+      position: relative;
+      z-index: 2;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.75rem;
+      color: #000;
+      box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+    .note.root { background: #f59e0b; }
+    .note.third { background: #06b6d4; }
+    .note.fifth { background: #ec4899; }
+    .note.seventh { background: #a855f7; color: #fff; }
+    select:disabled { opacity: 0.4; }
+    .note { cursor: pointer; }
+    .note { transition: opacity 0.15s, transform 0.15s; }
+    /* Notes of the hovered/tapped shape grow; the note under the cursor gets a ring */
+    .note.selected { transform: scale(1.3); z-index: 3; }
+    .note.selected.current { box-shadow: 0 0 0 2px #fff; }
+    .note.dim { opacity: 0.2; }
+    .note.shape-colored { color: #000; }
+    .tooltip .swatch {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      margin-inline-end: 6px; vertical-align: middle;
+    }
+    .tooltip .hint { color: #888; font-size: 0.72rem; margin-top: 2px; }
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #000;
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      white-space: nowrap;
+      z-index: 100;
+      display: none;
+    }
+    .tooltip .tab { font-family: ui-monospace, monospace; direction: ltr; unicode-bidi: isolate; color: #fbbf24; }
+    .voicing-info {
+      text-align: center;
+      margin-top: 12px;
+      color: #ccc;
+      font-family: ui-monospace, monospace;
+      direction: ltr;
+      min-height: 1.2em;
+    }
+    .legend {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+    .legend span {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-left: 5px;
+    }
+
+    /* ---------- Vertical neck (phones) ---------- */
+    .fretboard.vertical { min-width: 0; }
+    .v-row {
+      display: grid;
+      grid-template-columns: 30px repeat(6, 1fr);
+      height: 44px;
+      align-items: center;
+    }
+    .v-row.v-header { height: 40px; background: #111; }
+    .v-row.v-open { height: 40px; background: rgba(255,255,255,0.05); }
+    .v-string-label {
+      display: flex; flex-direction: column; align-items: center;
+      font-weight: bold; font-size: 0.85rem; color: #ccc; line-height: 1.1;
+    }
+    .v-string-label small { color: #888; font-weight: normal; font-size: 0.7rem; }
+    .v-cell {
+      position: relative; height: 100%;
+      border-bottom: 2px solid #888;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .v-cell.nut { border-bottom: 6px solid #fef08a; }
+    .v-string-line {
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 2px; margin-left: -1px; background: #aaa; z-index: 1;
+    }
+    .fretboard.vertical .note { width: 32px; height: 32px; font-size: 0.8rem; }
+
+    @media (max-width: 700px) {
+      body { padding: 12px 10px calc(12px + env(safe-area-inset-bottom)); }
+      h1 { font-size: 1.25rem; margin: 4px 0 12px; }
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .control-item select { width: 100%; font-size: 16px; padding: 10px 8px; } /* 16px stops iOS zoom-on-focus */
+      .fretboard-container { padding: 8px; overflow-x: visible; }
+      .legend { flex-wrap: wrap; gap: 8px 16px; font-size: 0.8rem; }
+      .tooltip { white-space: normal; max-width: calc(100vw - 16px); }
+      .note { -webkit-tap-highlight-color: transparent; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Visualizer אקורדים ומשולשים על גיטרה</h1>
+
+  <div class="controls">
+    <div class="control-item">
+      <label>תו שורש (Root)</label>
+      <select id="rootSelect"></select>
+    </div>
+    <div class="control-item">
+      <label>סוג אקורד</label>
+      <select id="typeSelect">
+        <optgroup label="אקורדים בני 3 תווים (Triads)">
+          <option value="major" selected>מז׳ור (Major)</option>
+          <option value="minor">מינור (Minor)</option>
+          <option value="diminished">מוקטן (Diminished)</option>
+          <option value="augmented">מוגדל (Augmented)</option>
+        </optgroup>
+        <optgroup label="אקורדים בני 4 תווים (7th Chords)">
+          <option value="dom7">דומיננט 7 (7)</option>
+          <option value="maj7">מג׳ור 7 (Maj7)</option>
+          <option value="m7">מינור 7 (m7)</option>
+          <option value="m7b5">חצי מוקטן (m7b5)</option>
+          <option value="dim7">מוקטן מלא (dim7)</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="control-item">
+      <label>קבוצת מיתרים</label>
+      <select id="stringSetSelect"></select>
+    </div>
+    <div class="control-item">
+      <label>היפוך</label>
+      <select id="inversionSelect"></select>
+    </div>
+    <div class="control-item">
+      <label>מיקום על הצוואר</label>
+      <select id="positionSelect"></select>
+    </div>
+    <div class="control-item">
+      <label>תצוגה</label>
+      <select id="modeSelect">
+        <option value="notes">תווים (C, Eb)</option>
+        <option value="intervals">דרגות (R, b3, 5, b7)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fretboard-container">
+    <div class="fretboard" id="fretboard"></div>
+  </div>
+
+  <div class="voicing-info" id="voicingInfo"></div>
+
+  <div class="tooltip" id="tooltip" dir="rtl"></div>
+
+  <div class="legend">
+    <div><span style="background: #f59e0b;"></span> שורש (Root)</div>
+    <div><span style="background: #06b6d4;"></span> טרצה (3rd)</div>
+    <div><span style="background: #ec4899;"></span> קווינטה (5th)</div>
+    <div><span style="background: #a855f7;"></span> ספטימה (7th)</div>
+  </div>
+
+  <script>
+    const NOTES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const STRINGS = [
+      { num: 1, name: 'E', pitch: 64 },
+      { num: 2, name: 'B', pitch: 59 },
+      { num: 3, name: 'G', pitch: 55 },
+      { num: 4, name: 'D', pitch: 50 },
+      { num: 5, name: 'A', pitch: 45 },
+      { num: 6, name: 'E', pitch: 40 }
+    ];
+
+    const FORMULAS = {
+      major: { intervals: [0, 4, 7], labels: ['R', '3', '5'] },
+      minor: { intervals: [0, 3, 7], labels: ['R', 'b3', '5'] },
+      diminished: { intervals: [0, 3, 6], labels: ['R', 'b3', 'b5'] },
+      augmented: { intervals: [0, 4, 8], labels: ['R', '3', '#5'] },
+      dom7: { intervals: [0, 4, 7, 10], labels: ['R', '3', '5', 'b7'] },
+      maj7: { intervals: [0, 4, 7, 11], labels: ['R', '3', '5', '7'] },
+      m7: { intervals: [0, 3, 7, 10], labels: ['R', 'b3', '5', 'b7'] },
+      m7b5: { intervals: [0, 3, 6, 10], labels: ['R', 'b3', 'b5', 'b7'] },
+      dim7: { intervals: [0, 3, 6, 9], labels: ['R', 'b3', 'b5', 'bb7'] }
+    };
+
+    const INVERSION_NAMES = ['מצב יסוד', 'היפוך 1', 'היפוך 2', 'היפוך 3', 'היפוך 4'];
+
+    const rootSelect = document.getElementById('rootSelect');
+    NOTES.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      rootSelect.appendChild(opt);
+    });
+
+    const typeSelect = document.getElementById('typeSelect');
+    const stringSetSelect = document.getElementById('stringSetSelect');
+    const inversionSelect = document.getElementById('inversionSelect');
+    const positionSelect = document.getElementById('positionSelect');
+    const modeSelect = document.getElementById('modeSelect');
+
+    // Playability rules:
+    // - max distance between lowest and highest fretted note (open strings don't count).
+    //   4 frets = one finger per note (covers standard drop-2/drop-3 shapes and dim triads).
+    // - open strings are only combined with fretted notes near the nut.
+    const MAX_FRET = 15;
+    const OPEN_STRING_MAX_FRET = 4;
+    const maxSpanFor = () => 4;
+
+    typeSelect.addEventListener('change', () => {
+      updateControlOptions();
+      updatePositionOptions();
+      render();
+    });
+    [rootSelect, stringSetSelect, inversionSelect].forEach(s =>
+      s.addEventListener('change', () => { updatePositionOptions(); render(); })
+    );
+    positionSelect.addEventListener('change', render);
+    modeSelect.addEventListener('change', render);
+
+    function updateControlOptions() {
+      const type = typeSelect.value;
+      const formula = FORMULAS[type];
+      const isFourNotes = formula.intervals.length === 4;
+
+      stringSetSelect.innerHTML = '';
+      const stringOptions = isFourNotes 
+        ? [
+            { val: '1234', text: '1, 2, 3, 4 (גבוהים)' },
+            { val: '2345', text: '2, 3, 4, 5' },
+            { val: '3456', text: '3, 4, 5, 6 (נמוכים)' }
+          ]
+        : [
+            { val: '123', text: '1, 2, 3 (גבוהים)' },
+            { val: '234', text: '2, 3, 4' },
+            { val: '345', text: '3, 4, 5' },
+            { val: '456', text: '4, 5, 6 (נמוכים)' }
+          ];
+
+      stringOptions.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.val;
+        opt.textContent = o.text;
+        stringSetSelect.appendChild(opt);
+      });
+
+      inversionSelect.innerHTML = '';
+      const invOptions = [
+        { val: 'all', text: 'הכל' },
+        { val: '0', text: 'מצב יסוד' },
+        { val: '1', text: 'היפוך 1' },
+        { val: '2', text: 'היפוך 2' }
+      ];
+
+      if (isFourNotes) {
+        invOptions.push({ val: '3', text: 'היפוך 3' });
+      }
+
+      invOptions.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.val;
+        opt.textContent = o.text;
+        inversionSelect.appendChild(opt);
+      });
+
+      inversionSelect.value = 'all';
+    }
+
+    function calculateVoicings() {
+      const stringSet = stringSetSelect.value;
+      if (!stringSet) return [];
+
+      const rootIdx = NOTES.indexOf(rootSelect.value);
+      const formula = FORMULAS[typeSelect.value];
+      const targetPitches = formula.intervals.map(i => (rootIdx + i) % 12);
+
+      // Strings ordered bass -> treble (e.g. '1234' -> strings 4,3,2,1)
+      const strings = stringSet.split('').map(Number)
+        .map(num => STRINGS.find(s => s.num === num))
+        .sort((a, b) => a.pitch - b.pitch);
+
+      const MAX_FRET_SPAN = maxSpanFor(formula.intervals.length);
+      const voicings = [];
+      const fretRange = notes => {
+        const fretted = notes.filter(n => n.fret > 0).map(n => n.fret);
+        return fretted.length
+          ? { min: Math.min(...fretted), max: Math.max(...fretted) }
+          : { min: 0, max: 0 };
+      };
+
+      // One note per string, every chord tone exactly once,
+      // pitches strictly rising from bass to treble, hand span <= MAX_FRET_SPAN.
+      function build(i, notes, usedRoles) {
+        if (i === strings.length) {
+          const r = fretRange(notes);
+          voicings.push({
+            inversion: notes[0].role,          // the bass note decides the inversion
+            notes: notes.slice(),
+            minFret: r.min,
+            maxFret: r.max
+          });
+          return;
+        }
+        const s = strings[i];
+        for (let f = 0; f <= MAX_FRET; f++) {
+          const pitch = s.pitch + f;
+          const role = targetPitches.indexOf(pitch % 12);
+          if (role === -1 || usedRoles.has(role)) continue;
+          if (notes.length && pitch <= notes[notes.length - 1].pitch) continue;
+
+          const next = [...notes, { stringNum: s.num, fret: f, pitch, role }];
+          const r = fretRange(next);
+          if (r.max - r.min > MAX_FRET_SPAN) continue;
+          if (next.some(n => n.fret === 0) && r.max > OPEN_STRING_MAX_FRET) continue;
+
+          usedRoles.add(role);
+          build(i + 1, next, usedRoles);
+          usedRoles.delete(role);
+        }
+      }
+      build(0, [], new Set());
+
+      voicings.sort((a, b) => a.minFret - b.minFret || a.maxFret - b.maxFret);
+      return voicings;
+    }
+
+    function getFilteredVoicings() {
+      const invFilter = inversionSelect.value;
+      return calculateVoicings().filter(v =>
+        invFilter === 'all' || v.inversion === parseInt(invFilter)
+      );
+    }
+
+    function updatePositionOptions() {
+      const prev = positionSelect.value;
+      positionSelect.innerHTML = '';
+
+      if (inversionSelect.value === 'all') {
+        const opt = document.createElement('option');
+        opt.value = 'all';
+        opt.textContent = 'כל המיקומים';
+        positionSelect.appendChild(opt);
+        positionSelect.disabled = true;
+        return;
+      }
+
+      positionSelect.disabled = false;
+      const voicings = getFilteredVoicings();
+      if (!voicings.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'אין מיקום נגיש';
+        positionSelect.appendChild(opt);
+        return;
+      }
+      voicings.forEach((v, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        const range = v.maxFret === 0 ? 'פתוח'
+          : v.minFret === v.maxFret ? `סריג ${v.minFret}`
+          : `סריגים ${v.minFret}–${v.maxFret}`;
+        opt.textContent = `${idx + 1}. ${range}`;
+        positionSelect.appendChild(opt);
+      });
+      if (prev && positionSelect.querySelector(`option[value="${prev}"]`)) {
+        positionSelect.value = prev;
+      }
+    }
+
+    // Tab-style readout, string 6 -> 1 (x = not played)
+    function tabFor(v) {
+      return [...STRINGS].reverse().map(s => {
+        const n = v.notes.find(n => n.stringNum === s.num);
+        return n ? n.fret : 'x';
+      }).join(' ');
+    }
+
+    // ---- Hover / click interaction ----
+    // Colors used only while hovering a note shared by several shapes
+    const SHAPE_COLORS = ['#4ade80', '#60a5fa', '#fb923c', '#f87171'];
+
+    let tooltipData = {};
+    let highlightedKey = null;
+    const tooltip = document.getElementById('tooltip');
+    const fretboardEl = document.getElementById('fretboard');
+
+    fretboardEl.addEventListener('mousemove', e => {
+      if (isTouch()) return;   // touch: handled by tap in the click handler
+      const noteEl = e.target.closest('.note');
+      const key = noteEl ? noteEl.dataset.key : null;
+      if (!key || !tooltipData[key]) { clearHighlight(); return; }
+      if (key !== highlightedKey) highlightShape(noteEl, key, tooltipData[key]);
+    });
+    fretboardEl.addEventListener('mouseleave', clearHighlight);
+
+    // Click a note: filter on its inversion/shape. Click again (filtered view): back to all.
+    fretboardEl.addEventListener('click', e => {
+      const noteEl = e.target.closest('.note');
+      const data = noteEl && tooltipData[noteEl.dataset.key];
+      if (!data) return;
+
+      if (isTouch() && highlightedKey !== noteEl.dataset.key) {
+        highlightShape(noteEl, noteEl.dataset.key, data);
+        return;
+      }
+
+      if (inversionSelect.value !== 'all') {
+        inversionSelect.value = 'all';
+        updatePositionOptions();
+        render();
+        return;
+      }
+      const shape = sortedShapes(data)[0];
+      inversionSelect.value = String(shape.inversion);
+      updatePositionOptions();
+      const idx = getFilteredVoicings().findIndex(v => tabFor(v) === shape.tab);
+      if (idx >= 0) positionSelect.value = String(idx);
+      render();
+    });
+
+    // Phone layout: vertical neck on narrow screens
+    const mobileQuery = window.matchMedia('(max-width: 700px)');
+    function isMobileLayout() { return mobileQuery.matches; }
+    mobileQuery.addEventListener('change', render);
+
+    // Touch screens have no hover: first tap previews a shape, second tap on the same note filters
+    const noHover = window.matchMedia('(hover: none)');
+    let lastTouch = noHover.matches;
+    document.addEventListener('pointerdown', e => { lastTouch = e.pointerType === 'touch'; }, true);
+    const isTouch = () => lastTouch;
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.note')) clearHighlight();   // tap empty space to dismiss
+    });
+
+    function sortedShapes(data) {
+      return data.shapes.slice().sort((a, b) => a.inversion - b.inversion);
+    }
+
+    function clearHighlight() {
+      highlightedKey = null;
+      tooltip.style.display = 'none';
+      fretboardEl.querySelectorAll('.note').forEach(el => {
+        el.classList.remove('dim');
+        el.style.background = '';
+        el.classList.remove('shape-colored', 'selected', 'current');
+      });
+    }
+
+    function highlightShape(noteEl, key, data) {
+      clearHighlight();
+      highlightedKey = key;
+      const shapes = sortedShapes(data);
+      const multi = shapes.length > 1;
+      const keep = new Set(shapes.flatMap(sh => sh.keys));
+
+      const keptEls = [];
+      fretboardEl.querySelectorAll('.note').forEach(el => {
+        const k = el.dataset.key;
+        if (!keep.has(k)) { el.classList.add('dim'); return; }
+        keptEls.push(el);
+        el.classList.add('selected');
+        if (multi) {
+          // Color each shape differently; a note in several shapes gets a split fill
+          const colors = shapes.map((sh, i) => sh.keys.includes(k) ? SHAPE_COLORS[i % SHAPE_COLORS.length] : null)
+                               .filter(Boolean);
+          const step = 360 / colors.length;
+          el.style.background = colors.length === 1 ? colors[0]
+            : `conic-gradient(${colors.map((c, i) => `${c} ${i * step}deg ${(i + 1) * step}deg`).join(', ')})`;
+          el.classList.add('shape-colored');
+        }
+      });
+
+      tooltip.innerHTML = shapes.map((sh, i) => {
+        const swatch = multi
+          ? `<span class="swatch" style="background:${SHAPE_COLORS[i % SHAPE_COLORS.length]}"></span>` : '';
+        return `<div>${swatch}<bdi>${INVERSION_NAMES[sh.inversion]}</bdi>: <bdi class="tab">${sh.tab}</bdi></div>`;
+      }).join('') + `<div class="hint">${inversionSelect.value === 'all' ? (isTouch() ? 'הקשה נוספת' : 'לחיצה') + ' = סינון לצורה הזו' : (isTouch() ? 'הקשה נוספת' : 'לחיצה') + ' = חזרה לכל ההיפוכים'}</div>`;
+      noteEl.classList.add('current');
+      tooltip.style.display = 'block';
+      placeTooltip(noteEl, keptEls);
+    }
+
+    // Place the tooltip outside the box of the highlighted notes so it never covers them
+    function placeTooltip(noteEl, keptEls) {
+      const box = keptEls.reduce((b, el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          top: Math.min(b.top, r.top), bottom: Math.max(b.bottom, r.bottom),
+          left: Math.min(b.left, r.left), right: Math.max(b.right, r.right)
+        };
+      }, { top: Infinity, bottom: -Infinity, left: Infinity, right: -Infinity });
+      const t = tooltip.getBoundingClientRect();
+      const n = noteEl.getBoundingClientRect();
+      const gap = 10, vw = window.innerWidth, vh = window.innerHeight;
+      const clampX = x => Math.max(4, Math.min(x, vw - t.width - 4));
+      const clampY = y => Math.max(4, Math.min(y, vh - t.height - 4));
+      let x, y;
+
+      if (box.top - gap - t.height >= 0) {                 // above
+        x = clampX(n.left + n.width / 2 - t.width / 2); y = box.top - gap - t.height;
+      } else if (box.bottom + gap + t.height <= vh) {      // below
+        x = clampX(n.left + n.width / 2 - t.width / 2); y = box.bottom + gap;
+      } else if (box.right + gap + t.width <= vw) {        // right
+        x = box.right + gap; y = clampY(n.top);
+      } else {                                             // left
+        x = Math.max(4, box.left - gap - t.width); y = clampY(n.top);
+      }
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    }
+
+    function render() {
+      const fretboard = document.getElementById('fretboard');
+      fretboard.innerHTML = '';
+
+      const displayMode = modeSelect.value;
+      const formula = FORMULAS[typeSelect.value];
+
+      let voicings = getFilteredVoicings();
+      const info = document.getElementById('voicingInfo');
+      info.textContent = '';
+
+      // A specific inversion -> show exactly one voicing (one shape on the neck)
+      if (inversionSelect.value !== 'all') {
+        const v = voicings[parseInt(positionSelect.value)];
+        voicings = v ? [v] : [];
+        if (v) {
+          info.textContent = tabFor(v);
+        }
+      }
+
+      const noteMap = {};
+      voicings.forEach(v => {
+        v.notes.forEach(n => {
+          const key = `${n.stringNum}-${n.fret}`;
+          // The same fret can belong to shapes of several inversions
+          if (!noteMap[key]) {
+            noteMap[key] = {
+              role: n.role,
+              labelNote: NOTES[n.pitch % 12],
+              labelInterval: formula.labels[n.role],
+              shapes: []
+            };
+          }
+          noteMap[key].shapes.push({
+            inversion: v.inversion,
+            tab: tabFor(v),
+            keys: v.notes.map(m => `${m.stringNum}-${m.fret}`)
+          });
+        });
+      });
+
+      tooltipData = noteMap;
+      highlightedKey = null;
+      tooltip.style.display = 'none';
+
+      const noteHtmlFor = (s, f) => {
+        const key = `${s.num}-${f}`;
+        const data = noteMap[key];
+        if (!data) return '';
+        const roleClass = ['root', 'third', 'fifth', 'seventh'][data.role] || 'root';
+        const text = displayMode === 'notes' ? data.labelNote : data.labelInterval;
+        return `<div class="note ${roleClass}" data-key="${key}">${text}</div>`;
+      };
+
+      const vertical = isMobileLayout();
+      fretboard.classList.toggle('vertical', vertical);
+
+      if (vertical) {
+        // Phone: chord-chart orientation. Columns = strings 6 -> 1, rows = frets.
+        const ordered = [...STRINGS].reverse();
+        const header = document.createElement('div');
+        header.className = 'v-row v-header';
+        header.innerHTML = '<div class="fret-num"></div>' +
+          ordered.map(s => `<div class="v-string-label">${s.num}<small>${s.name}</small></div>`).join('');
+        fretboard.appendChild(header);
+
+        for (let f = 0; f <= MAX_FRET; f++) {
+          const row = document.createElement('div');
+          row.className = 'v-row' + (f === 0 ? ' v-open' : '');
+          row.innerHTML = `<div class="fret-num">${f}</div>` + ordered.map(s =>
+            `<div class="v-cell ${f === 0 ? 'nut' : ''}"><div class="v-string-line"></div>${noteHtmlFor(s, f)}</div>`
+          ).join('');
+          fretboard.appendChild(row);
+        }
+        return;
+      }
+
+      // Desktop: horizontal neck
+      const headerRow = document.createElement('div');
+      headerRow.className = 'grid-row';
+      headerRow.innerHTML = '<div class="fret-num"></div><div class="fret-num">0</div>';
+      for (let f = 1; f <= MAX_FRET; f++) {
+        headerRow.innerHTML += `<div class="fret-num">${f}</div>`;
+      }
+      fretboard.appendChild(headerRow);
+
+      STRINGS.forEach(s => {
+        const row = document.createElement('div');
+        row.className = 'grid-row';
+        let html = `<div class="string-label">מיתר ${s.num} (${s.name})</div>`;
+        for (let f = 0; f <= MAX_FRET; f++) {
+          const isNut = f === 0 ? 'nut' : '';
+          html += `<div class="fret-cell ${isNut}"><div class="string-line"></div>${noteHtmlFor(s, f)}</div>`;
+        }
+        row.innerHTML = html;
+        fretboard.appendChild(row);
+      });
+    }
+
+    // Boot execution
+    updateControlOptions();
+    updatePositionOptions();
+    render();
+  </script>
+</body>
+</html>

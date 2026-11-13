@@ -59,6 +59,16 @@ accordingly, e.g.:
 - Create React App: `command = "npm run build"`, `publish = "build"`
 - Next.js (static export): `command = "npm run build"`, `publish = "out"`
 
+## GitHub Pages
+
+Some apps are also published on GitHub Pages by `.github/workflows/pages.yml`,
+on every push to `main`:
+
+- chord-visualizer → https://dudemagniv.github.io/claude-apps/chord-visualizer/
+
+To publish another app there, add its folder name to `PAGES_APPS` in the
+workflow. (One-time repo setting: Settings → Pages → Source: **GitHub Actions**.)
+
 ## Deploy previews for pull requests
 
 Netlify does this automatically once a site is connected — every PR touching

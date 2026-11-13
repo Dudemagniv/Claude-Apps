@@ -1,0 +1,51 @@
+# Deploys selected app folders to GitHub Pages.
+# Site: https://dudemagniv.github.io/claude-apps/<folder>/
+# To publish another app on Pages, add its folder to PAGES_APPS below.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  PAGES_APPS: "chord-visualizer"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          for app in $PAGES_APPS; do
+            cp -r "$app" "_site/$app"
+          done
+          # Root page links to every published app
+          {
+            echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Claude Apps</title>'
+            echo '<style>body{background:#121212;color:#eee;font-family:system-ui,sans-serif;padding:24px}a{color:#fbbf24;font-size:1.1rem}li{margin:10px 0}</style></head><body><h1>Claude Apps</h1><ul>'
+            for app in $PAGES_APPS; do echo "<li><a href=\"$app/\">$app</a></li>"; done
+            echo '</ul></body></html>'
+          } > _site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
